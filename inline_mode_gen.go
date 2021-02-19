@@ -16,7 +16,7 @@ type InlineQuery struct {
 	// Optional. Sender location, only for bots that request user location
 	Location *Location `json:"location,omitempty"`
 
-	// Text of the query (up to 512 characters)
+	// Text of the query (up to 256 characters)
 	Query string `json:"query"`
 
 	// Offset of the results to be returned, can be controlled by the bot
@@ -41,7 +41,7 @@ type AnswerInlineQueryRequest struct {
 
 	// Optional. Pass the offset that a client should send in the next query with the
 	// same text to receive more results. Pass an empty string if there are no more
-	// results or if you don‘t support pagination. Offset length can’t exceed 64
+	// results or if you don't support pagination. Offset length can't exceed 64
 	// bytes.
 	NextOffset string `json:"next_offset,omitempty"`
 
@@ -56,7 +56,7 @@ type AnswerInlineQueryRequest struct {
 	//
 	// Example: An inline bot that sends YouTube videos can ask the user to connect the
 	// bot to their YouTube account to adapt search results accordingly. To do this, it
-	// displays a ‘Connect your YouTube account’ button above the results, or even
+	// displays a 'Connect your YouTube account' button above the results, or even
 	// before showing any. The user presses the button, switches to a private chat with
 	// the bot and, in doing so, passes a start parameter that instructs the bot to
 	// return an oauth link. Once done, the bot can offer a switch_inline button so
@@ -72,73 +72,6 @@ func (b *Bot) AnswerInlineQuery(req *AnswerInlineQueryRequest) (json.RawMessage,
 	return b.makeRequest("answerInlineQuery", req)
 }
 
-// This object represents one result of an inline query. Telegram clients currently
-// support results of the following 20 types:
-//
-//
-//
-// - InlineQueryResultCachedAudio
-//
-//
-// - InlineQueryResultCachedDocument
-//
-//
-// - InlineQueryResultCachedGif
-//
-//
-// - InlineQueryResultCachedMpeg4Gif
-//
-//
-// - InlineQueryResultCachedPhoto
-//
-//
-// - InlineQueryResultCachedSticker
-//
-//
-// - InlineQueryResultCachedVideo
-//
-//
-// - InlineQueryResultCachedVoice
-//
-//
-// - InlineQueryResultArticle
-//
-//
-// - InlineQueryResultAudio
-//
-//
-// - InlineQueryResultContact
-//
-//
-// - InlineQueryResultGame
-//
-//
-// - InlineQueryResultDocument
-//
-//
-// - InlineQueryResultGif
-//
-//
-// - InlineQueryResultLocation
-//
-//
-// - InlineQueryResultMpeg4Gif
-//
-//
-// - InlineQueryResultPhoto
-//
-//
-// - InlineQueryResultVenue
-//
-//
-// - InlineQueryResultVideo
-//
-//
-// - InlineQueryResultVoice
-//
-//
-type InlineQueryResult struct{}
-
 // Represents a link to an article or web page.
 type InlineQueryResultArticle struct {
 	// Type of the result, must be article
@@ -151,7 +84,7 @@ type InlineQueryResultArticle struct {
 	Title string `json:"title"`
 
 	// Content of the message to be sent
-	InputMessageContent *InputMessageContent `json:"input_message_content"`
+	InputMessageContent InputMessageContent `json:"input_message_content"`
 
 	// Optional. Inline keyboard attached to the message
 	ReplyMarkup *InlineKeyboardMarkup `json:"reply_markup,omitempty"`
@@ -204,18 +137,23 @@ type InlineQueryResultPhoto struct {
 	// Optional. Short description of the result
 	Description string `json:"description,omitempty"`
 
-	// Optional. Caption of the photo to be sent, 0-1024 characters
+	// Optional. Caption of the photo to be sent, 0-1024 characters after entities
+	// parsing
 	Caption string `json:"caption,omitempty"`
 
-	// Optional. Send Markdown or HTML, if you want Telegram apps to show bold, italic,
-	// fixed-width text or inline URLs in the media caption.
+	// Optional. Mode for parsing entities in the photo caption. See formatting options
+	// for more details.
 	ParseMode string `json:"parse_mode,omitempty"`
+
+	// Optional. List of special entities that appear in the caption, which can be
+	// specified instead of parse_mode
+	CaptionEntities []MessageEntity `json:"caption_entities,omitempty"`
 
 	// Optional. Inline keyboard attached to the message
 	ReplyMarkup *InlineKeyboardMarkup `json:"reply_markup,omitempty"`
 
 	// Optional. Content of the message to be sent instead of the photo
-	InputMessageContent *InputMessageContent `json:"input_message_content,omitempty"`
+	InputMessageContent InputMessageContent `json:"input_message_content,omitempty"`
 }
 
 // Represents a link to an animated GIF file. By default, this animated GIF file
@@ -241,24 +179,33 @@ type InlineQueryResultGif struct {
 	// Optional. Duration of the GIF
 	GifDuration int `json:"gif_duration,omitempty"`
 
-	// URL of the static thumbnail for the result (jpeg or gif)
+	// URL of the static (JPEG or GIF) or animated (MPEG4) thumbnail for the result
 	ThumbURL string `json:"thumb_url"`
+
+	// Optional. MIME type of the thumbnail, must be one of “image/jpeg”,
+	// “image/gif”, or “video/mp4”. Defaults to “image/jpeg”
+	ThumbMimeType string `json:"thumb_mime_type,omitempty"`
 
 	// Optional. Title for the result
 	Title string `json:"title,omitempty"`
 
-	// Optional. Caption of the GIF file to be sent, 0-1024 characters
+	// Optional. Caption of the GIF file to be sent, 0-1024 characters after entities
+	// parsing
 	Caption string `json:"caption,omitempty"`
 
-	// Optional. Send Markdown or HTML, if you want Telegram apps to show bold, italic,
-	// fixed-width text or inline URLs in the media caption.
+	// Optional. Mode for parsing entities in the caption. See formatting options for
+	// more details.
 	ParseMode string `json:"parse_mode,omitempty"`
+
+	// Optional. List of special entities that appear in the caption, which can be
+	// specified instead of parse_mode
+	CaptionEntities []MessageEntity `json:"caption_entities,omitempty"`
 
 	// Optional. Inline keyboard attached to the message
 	ReplyMarkup *InlineKeyboardMarkup `json:"reply_markup,omitempty"`
 
 	// Optional. Content of the message to be sent instead of the GIF animation
-	InputMessageContent *InputMessageContent `json:"input_message_content,omitempty"`
+	InputMessageContent InputMessageContent `json:"input_message_content,omitempty"`
 }
 
 // Represents a link to a video animation (H.264/MPEG-4 AVC video without sound).
@@ -284,24 +231,33 @@ type InlineQueryResultMpeg4Gif struct {
 	// Optional. Video duration
 	Mpeg4Duration int `json:"mpeg4_duration,omitempty"`
 
-	// URL of the static thumbnail (jpeg or gif) for the result
+	// URL of the static (JPEG or GIF) or animated (MPEG4) thumbnail for the result
 	ThumbURL string `json:"thumb_url"`
+
+	// Optional. MIME type of the thumbnail, must be one of “image/jpeg”,
+	// “image/gif”, or “video/mp4”. Defaults to “image/jpeg”
+	ThumbMimeType string `json:"thumb_mime_type,omitempty"`
 
 	// Optional. Title for the result
 	Title string `json:"title,omitempty"`
 
-	// Optional. Caption of the MPEG-4 file to be sent, 0-1024 characters
+	// Optional. Caption of the MPEG-4 file to be sent, 0-1024 characters after
+	// entities parsing
 	Caption string `json:"caption,omitempty"`
 
-	// Optional. Send Markdown or HTML, if you want Telegram apps to show bold, italic,
-	// fixed-width text or inline URLs in the media caption.
+	// Optional. Mode for parsing entities in the caption. See formatting options for
+	// more details.
 	ParseMode string `json:"parse_mode,omitempty"`
+
+	// Optional. List of special entities that appear in the caption, which can be
+	// specified instead of parse_mode
+	CaptionEntities []MessageEntity `json:"caption_entities,omitempty"`
 
 	// Optional. Inline keyboard attached to the message
 	ReplyMarkup *InlineKeyboardMarkup `json:"reply_markup,omitempty"`
 
 	// Optional. Content of the message to be sent instead of the video animation
-	InputMessageContent *InputMessageContent `json:"input_message_content,omitempty"`
+	InputMessageContent InputMessageContent `json:"input_message_content,omitempty"`
 }
 
 // Represents a link to a page containing an embedded video player or a video file.
@@ -332,12 +288,17 @@ type InlineQueryResultVideo struct {
 	// Title for the result
 	Title string `json:"title"`
 
-	// Optional. Caption of the video to be sent, 0-1024 characters
+	// Optional. Caption of the video to be sent, 0-1024 characters after entities
+	// parsing
 	Caption string `json:"caption,omitempty"`
 
-	// Optional. Send Markdown or HTML, if you want Telegram apps to show bold, italic,
-	// fixed-width text or inline URLs in the media caption.
+	// Optional. Mode for parsing entities in the video caption. See formatting options
+	// for more details.
 	ParseMode string `json:"parse_mode,omitempty"`
+
+	// Optional. List of special entities that appear in the caption, which can be
+	// specified instead of parse_mode
+	CaptionEntities []MessageEntity `json:"caption_entities,omitempty"`
 
 	// Optional. Video width
 	VideoWidth int `json:"video_width,omitempty"`
@@ -357,7 +318,7 @@ type InlineQueryResultVideo struct {
 	// Optional. Content of the message to be sent instead of the video. This field is
 	// required if InlineQueryResultVideo is used to send an HTML-page as a result
 	// (e.g., a YouTube video).
-	InputMessageContent *InputMessageContent `json:"input_message_content,omitempty"`
+	InputMessageContent InputMessageContent `json:"input_message_content,omitempty"`
 }
 
 // Represents a link to an MP3 audio file. By default, this audio file will be sent
@@ -379,12 +340,16 @@ type InlineQueryResultAudio struct {
 	// Title
 	Title string `json:"title"`
 
-	// Optional. Caption, 0-1024 characters
+	// Optional. Caption, 0-1024 characters after entities parsing
 	Caption string `json:"caption,omitempty"`
 
-	// Optional. Send Markdown or HTML, if you want Telegram apps to show bold, italic,
-	// fixed-width text or inline URLs in the media caption.
+	// Optional. Mode for parsing entities in the audio caption. See formatting options
+	// for more details.
 	ParseMode string `json:"parse_mode,omitempty"`
+
+	// Optional. List of special entities that appear in the caption, which can be
+	// specified instead of parse_mode
+	CaptionEntities []MessageEntity `json:"caption_entities,omitempty"`
 
 	// Optional. Performer
 	Performer string `json:"performer,omitempty"`
@@ -396,10 +361,10 @@ type InlineQueryResultAudio struct {
 	ReplyMarkup *InlineKeyboardMarkup `json:"reply_markup,omitempty"`
 
 	// Optional. Content of the message to be sent instead of the audio
-	InputMessageContent *InputMessageContent `json:"input_message_content,omitempty"`
+	InputMessageContent InputMessageContent `json:"input_message_content,omitempty"`
 }
 
-// Represents a link to a voice recording in an .ogg container encoded with OPUS.
+// Represents a link to a voice recording in an .OGG container encoded with OPUS.
 // By default, this voice recording will be sent by the user. Alternatively, you
 // can use input_message_content to send a message with the specified content
 // instead of the the voice message.
@@ -419,12 +384,16 @@ type InlineQueryResultVoice struct {
 	// Recording title
 	Title string `json:"title"`
 
-	// Optional. Caption, 0-1024 characters
+	// Optional. Caption, 0-1024 characters after entities parsing
 	Caption string `json:"caption,omitempty"`
 
-	// Optional. Send Markdown or HTML, if you want Telegram apps to show bold, italic,
-	// fixed-width text or inline URLs in the media caption.
+	// Optional. Mode for parsing entities in the voice message caption. See formatting
+	// options for more details.
 	ParseMode string `json:"parse_mode,omitempty"`
+
+	// Optional. List of special entities that appear in the caption, which can be
+	// specified instead of parse_mode
+	CaptionEntities []MessageEntity `json:"caption_entities,omitempty"`
 
 	// Optional. Recording duration in seconds
 	VoiceDuration int `json:"voice_duration,omitempty"`
@@ -433,7 +402,7 @@ type InlineQueryResultVoice struct {
 	ReplyMarkup *InlineKeyboardMarkup `json:"reply_markup,omitempty"`
 
 	// Optional. Content of the message to be sent instead of the voice recording
-	InputMessageContent *InputMessageContent `json:"input_message_content,omitempty"`
+	InputMessageContent InputMessageContent `json:"input_message_content,omitempty"`
 }
 
 // Represents a link to a file. By default, this file will be sent by the user with
@@ -453,12 +422,17 @@ type InlineQueryResultDocument struct {
 	// Title for the result
 	Title string `json:"title"`
 
-	// Optional. Caption of the document to be sent, 0-1024 characters
+	// Optional. Caption of the document to be sent, 0-1024 characters after entities
+	// parsing
 	Caption string `json:"caption,omitempty"`
 
-	// Optional. Send Markdown or HTML, if you want Telegram apps to show bold, italic,
-	// fixed-width text or inline URLs in the media caption.
+	// Optional. Mode for parsing entities in the document caption. See formatting
+	// options for more details.
 	ParseMode string `json:"parse_mode,omitempty"`
+
+	// Optional. List of special entities that appear in the caption, which can be
+	// specified instead of parse_mode
+	CaptionEntities []MessageEntity `json:"caption_entities,omitempty"`
 
 	// A valid URL for the file
 	DocumentURL string `json:"document_url"`
@@ -474,7 +448,7 @@ type InlineQueryResultDocument struct {
 	ReplyMarkup *InlineKeyboardMarkup `json:"reply_markup,omitempty"`
 
 	// Optional. Content of the message to be sent instead of the file
-	InputMessageContent *InputMessageContent `json:"input_message_content,omitempty"`
+	InputMessageContent InputMessageContent `json:"input_message_content,omitempty"`
 
 	// Optional. URL of the thumbnail (jpeg only) for the file
 	ThumbURL string `json:"thumb_url,omitempty"`
@@ -508,15 +482,28 @@ type InlineQueryResultLocation struct {
 	// Location title
 	Title string `json:"title"`
 
+	// Optional. The radius of uncertainty for the location, measured in meters;
+	// 0-1500
+	HorizontalAccuracy float64 `json:"horizontal_accuracy,omitempty"`
+
 	// Optional. Period in seconds for which the location can be updated, should be
 	// between 60 and 86400.
 	LivePeriod int `json:"live_period,omitempty"`
+
+	// Optional. For live locations, a direction in which the user is moving, in
+	// degrees. Must be between 1 and 360 if specified.
+	Heading int `json:"heading,omitempty"`
+
+	// Optional. For live locations, a maximum distance for proximity alerts about
+	// approaching another chat member, in meters. Must be between 1 and 100000 if
+	// specified.
+	ProximityAlertRadius int `json:"proximity_alert_radius,omitempty"`
 
 	// Optional. Inline keyboard attached to the message
 	ReplyMarkup *InlineKeyboardMarkup `json:"reply_markup,omitempty"`
 
 	// Optional. Content of the message to be sent instead of the location
-	InputMessageContent *InputMessageContent `json:"input_message_content,omitempty"`
+	InputMessageContent InputMessageContent `json:"input_message_content,omitempty"`
 
 	// Optional. Url of the thumbnail for the result
 	ThumbURL string `json:"thumb_url,omitempty"`
@@ -561,11 +548,17 @@ type InlineQueryResultVenue struct {
 	// “food/icecream”.)
 	FoursquareType string `json:"foursquare_type,omitempty"`
 
+	// Optional. Google Places identifier of the venue
+	GooglePlaceID string `json:"google_place_id,omitempty"`
+
+	// Optional. Google Places type of the venue. (See supported types.)
+	GooglePlaceType string `json:"google_place_type,omitempty"`
+
 	// Optional. Inline keyboard attached to the message
 	ReplyMarkup *InlineKeyboardMarkup `json:"reply_markup,omitempty"`
 
 	// Optional. Content of the message to be sent instead of the venue
-	InputMessageContent *InputMessageContent `json:"input_message_content,omitempty"`
+	InputMessageContent InputMessageContent `json:"input_message_content,omitempty"`
 
 	// Optional. Url of the thumbnail for the result
 	ThumbURL string `json:"thumb_url,omitempty"`
@@ -607,7 +600,7 @@ type InlineQueryResultContact struct {
 	ReplyMarkup *InlineKeyboardMarkup `json:"reply_markup,omitempty"`
 
 	// Optional. Content of the message to be sent instead of the contact
-	InputMessageContent *InputMessageContent `json:"input_message_content,omitempty"`
+	InputMessageContent InputMessageContent `json:"input_message_content,omitempty"`
 
 	// Optional. Url of the thumbnail for the result
 	ThumbURL string `json:"thumb_url,omitempty"`
@@ -658,18 +651,23 @@ type InlineQueryResultCachedPhoto struct {
 	// Optional. Short description of the result
 	Description string `json:"description,omitempty"`
 
-	// Optional. Caption of the photo to be sent, 0-1024 characters
+	// Optional. Caption of the photo to be sent, 0-1024 characters after entities
+	// parsing
 	Caption string `json:"caption,omitempty"`
 
-	// Optional. Send Markdown or HTML, if you want Telegram apps to show bold, italic,
-	// fixed-width text or inline URLs in the media caption.
+	// Optional. Mode for parsing entities in the photo caption. See formatting options
+	// for more details.
 	ParseMode string `json:"parse_mode,omitempty"`
+
+	// Optional. List of special entities that appear in the caption, which can be
+	// specified instead of parse_mode
+	CaptionEntities []MessageEntity `json:"caption_entities,omitempty"`
 
 	// Optional. Inline keyboard attached to the message
 	ReplyMarkup *InlineKeyboardMarkup `json:"reply_markup,omitempty"`
 
 	// Optional. Content of the message to be sent instead of the photo
-	InputMessageContent *InputMessageContent `json:"input_message_content,omitempty"`
+	InputMessageContent InputMessageContent `json:"input_message_content,omitempty"`
 }
 
 // Represents a link to an animated GIF file stored on the Telegram servers. By
@@ -689,18 +687,23 @@ type InlineQueryResultCachedGif struct {
 	// Optional. Title for the result
 	Title string `json:"title,omitempty"`
 
-	// Optional. Caption of the GIF file to be sent, 0-1024 characters
+	// Optional. Caption of the GIF file to be sent, 0-1024 characters after entities
+	// parsing
 	Caption string `json:"caption,omitempty"`
 
-	// Optional. Send Markdown or HTML, if you want Telegram apps to show bold, italic,
-	// fixed-width text or inline URLs in the media caption.
+	// Optional. Mode for parsing entities in the caption. See formatting options for
+	// more details.
 	ParseMode string `json:"parse_mode,omitempty"`
+
+	// Optional. List of special entities that appear in the caption, which can be
+	// specified instead of parse_mode
+	CaptionEntities []MessageEntity `json:"caption_entities,omitempty"`
 
 	// Optional. Inline keyboard attached to the message
 	ReplyMarkup *InlineKeyboardMarkup `json:"reply_markup,omitempty"`
 
 	// Optional. Content of the message to be sent instead of the GIF animation
-	InputMessageContent *InputMessageContent `json:"input_message_content,omitempty"`
+	InputMessageContent InputMessageContent `json:"input_message_content,omitempty"`
 }
 
 // Represents a link to a video animation (H.264/MPEG-4 AVC video without sound)
@@ -721,18 +724,23 @@ type InlineQueryResultCachedMpeg4Gif struct {
 	// Optional. Title for the result
 	Title string `json:"title,omitempty"`
 
-	// Optional. Caption of the MPEG-4 file to be sent, 0-1024 characters
+	// Optional. Caption of the MPEG-4 file to be sent, 0-1024 characters after
+	// entities parsing
 	Caption string `json:"caption,omitempty"`
 
-	// Optional. Send Markdown or HTML, if you want Telegram apps to show bold, italic,
-	// fixed-width text or inline URLs in the media caption.
+	// Optional. Mode for parsing entities in the caption. See formatting options for
+	// more details.
 	ParseMode string `json:"parse_mode,omitempty"`
+
+	// Optional. List of special entities that appear in the caption, which can be
+	// specified instead of parse_mode
+	CaptionEntities []MessageEntity `json:"caption_entities,omitempty"`
 
 	// Optional. Inline keyboard attached to the message
 	ReplyMarkup *InlineKeyboardMarkup `json:"reply_markup,omitempty"`
 
 	// Optional. Content of the message to be sent instead of the video animation
-	InputMessageContent *InputMessageContent `json:"input_message_content,omitempty"`
+	InputMessageContent InputMessageContent `json:"input_message_content,omitempty"`
 }
 
 // Represents a link to a sticker stored on the Telegram servers. By default, this
@@ -757,7 +765,7 @@ type InlineQueryResultCachedSticker struct {
 	ReplyMarkup *InlineKeyboardMarkup `json:"reply_markup,omitempty"`
 
 	// Optional. Content of the message to be sent instead of the sticker
-	InputMessageContent *InputMessageContent `json:"input_message_content,omitempty"`
+	InputMessageContent InputMessageContent `json:"input_message_content,omitempty"`
 }
 
 // Represents a link to a file stored on the Telegram servers. By default, this
@@ -783,18 +791,23 @@ type InlineQueryResultCachedDocument struct {
 	// Optional. Short description of the result
 	Description string `json:"description,omitempty"`
 
-	// Optional. Caption of the document to be sent, 0-1024 characters
+	// Optional. Caption of the document to be sent, 0-1024 characters after entities
+	// parsing
 	Caption string `json:"caption,omitempty"`
 
-	// Optional. Send Markdown or HTML, if you want Telegram apps to show bold, italic,
-	// fixed-width text or inline URLs in the media caption.
+	// Optional. Mode for parsing entities in the document caption. See formatting
+	// options for more details.
 	ParseMode string `json:"parse_mode,omitempty"`
+
+	// Optional. List of special entities that appear in the caption, which can be
+	// specified instead of parse_mode
+	CaptionEntities []MessageEntity `json:"caption_entities,omitempty"`
 
 	// Optional. Inline keyboard attached to the message
 	ReplyMarkup *InlineKeyboardMarkup `json:"reply_markup,omitempty"`
 
 	// Optional. Content of the message to be sent instead of the file
-	InputMessageContent *InputMessageContent `json:"input_message_content,omitempty"`
+	InputMessageContent InputMessageContent `json:"input_message_content,omitempty"`
 }
 
 // Represents a link to a video file stored on the Telegram servers. By default,
@@ -817,18 +830,23 @@ type InlineQueryResultCachedVideo struct {
 	// Optional. Short description of the result
 	Description string `json:"description,omitempty"`
 
-	// Optional. Caption of the video to be sent, 0-1024 characters
+	// Optional. Caption of the video to be sent, 0-1024 characters after entities
+	// parsing
 	Caption string `json:"caption,omitempty"`
 
-	// Optional. Send Markdown or HTML, if you want Telegram apps to show bold, italic,
-	// fixed-width text or inline URLs in the media caption.
+	// Optional. Mode for parsing entities in the video caption. See formatting options
+	// for more details.
 	ParseMode string `json:"parse_mode,omitempty"`
+
+	// Optional. List of special entities that appear in the caption, which can be
+	// specified instead of parse_mode
+	CaptionEntities []MessageEntity `json:"caption_entities,omitempty"`
 
 	// Optional. Inline keyboard attached to the message
 	ReplyMarkup *InlineKeyboardMarkup `json:"reply_markup,omitempty"`
 
 	// Optional. Content of the message to be sent instead of the video
-	InputMessageContent *InputMessageContent `json:"input_message_content,omitempty"`
+	InputMessageContent InputMessageContent `json:"input_message_content,omitempty"`
 }
 
 // Represents a link to a voice message stored on the Telegram servers. By default,
@@ -851,18 +869,22 @@ type InlineQueryResultCachedVoice struct {
 	// Voice message title
 	Title string `json:"title"`
 
-	// Optional. Caption, 0-1024 characters
+	// Optional. Caption, 0-1024 characters after entities parsing
 	Caption string `json:"caption,omitempty"`
 
-	// Optional. Send Markdown or HTML, if you want Telegram apps to show bold, italic,
-	// fixed-width text or inline URLs in the media caption.
+	// Optional. Mode for parsing entities in the voice message caption. See formatting
+	// options for more details.
 	ParseMode string `json:"parse_mode,omitempty"`
+
+	// Optional. List of special entities that appear in the caption, which can be
+	// specified instead of parse_mode
+	CaptionEntities []MessageEntity `json:"caption_entities,omitempty"`
 
 	// Optional. Inline keyboard attached to the message
 	ReplyMarkup *InlineKeyboardMarkup `json:"reply_markup,omitempty"`
 
 	// Optional. Content of the message to be sent instead of the voice message
-	InputMessageContent *InputMessageContent `json:"input_message_content,omitempty"`
+	InputMessageContent InputMessageContent `json:"input_message_content,omitempty"`
 }
 
 // Represents a link to an MP3 audio file stored on the Telegram servers. By
@@ -882,38 +904,23 @@ type InlineQueryResultCachedAudio struct {
 	// A valid file identifier for the audio file
 	AudioFileID string `json:"audio_file_id"`
 
-	// Optional. Caption, 0-1024 characters
+	// Optional. Caption, 0-1024 characters after entities parsing
 	Caption string `json:"caption,omitempty"`
 
-	// Optional. Send Markdown or HTML, if you want Telegram apps to show bold, italic,
-	// fixed-width text or inline URLs in the media caption.
+	// Optional. Mode for parsing entities in the audio caption. See formatting options
+	// for more details.
 	ParseMode string `json:"parse_mode,omitempty"`
+
+	// Optional. List of special entities that appear in the caption, which can be
+	// specified instead of parse_mode
+	CaptionEntities []MessageEntity `json:"caption_entities,omitempty"`
 
 	// Optional. Inline keyboard attached to the message
 	ReplyMarkup *InlineKeyboardMarkup `json:"reply_markup,omitempty"`
 
 	// Optional. Content of the message to be sent instead of the audio
-	InputMessageContent *InputMessageContent `json:"input_message_content,omitempty"`
+	InputMessageContent InputMessageContent `json:"input_message_content,omitempty"`
 }
-
-// This object represents the content of a message to be sent as a result of an
-// inline query. Telegram clients currently support the following 4 types:
-//
-//
-//
-// - InputTextMessageContent
-//
-//
-// - InputLocationMessageContent
-//
-//
-// - InputVenueMessageContent
-//
-//
-// - InputContactMessageContent
-//
-//
-type InputMessageContent struct{}
 
 // Represents the content of a text message to be sent as the result of an inline
 // query.
@@ -921,9 +928,13 @@ type InputTextMessageContent struct {
 	// Text of the message to be sent, 1-4096 characters
 	MessageText string `json:"message_text"`
 
-	// Optional. Send Markdown or HTML, if you want Telegram apps to show bold, italic,
-	// fixed-width text or inline URLs in your bot's message.
+	// Optional. Mode for parsing entities in the message text. See formatting options
+	// for more details.
 	ParseMode string `json:"parse_mode,omitempty"`
+
+	// Optional. List of special entities that appear in message text, which can be
+	// specified instead of parse_mode
+	Entities []MessageEntity `json:"entities,omitempty"`
 
 	// Optional. Disables link previews for links in the sent message
 	DisableWebPagePreview bool `json:"disable_web_page_preview,omitempty"`
@@ -938,9 +949,22 @@ type InputLocationMessageContent struct {
 	// Longitude of the location in degrees
 	Longitude float64 `json:"longitude"`
 
+	// Optional. The radius of uncertainty for the location, measured in meters;
+	// 0-1500
+	HorizontalAccuracy float64 `json:"horizontal_accuracy,omitempty"`
+
 	// Optional. Period in seconds for which the location can be updated, should be
 	// between 60 and 86400.
 	LivePeriod int `json:"live_period,omitempty"`
+
+	// Optional. For live locations, a direction in which the user is moving, in
+	// degrees. Must be between 1 and 360 if specified.
+	Heading int `json:"heading,omitempty"`
+
+	// Optional. For live locations, a maximum distance for proximity alerts about
+	// approaching another chat member, in meters. Must be between 1 and 100000 if
+	// specified.
+	ProximityAlertRadius int `json:"proximity_alert_radius,omitempty"`
 }
 
 // Represents the content of a venue message to be sent as the result of an inline
@@ -965,6 +989,12 @@ type InputVenueMessageContent struct {
 	// “arts_entertainment/default”, “arts_entertainment/aquarium” or
 	// “food/icecream”.)
 	FoursquareType string `json:"foursquare_type,omitempty"`
+
+	// Optional. Google Places identifier of the venue
+	GooglePlaceID string `json:"google_place_id,omitempty"`
+
+	// Optional. Google Places type of the venue. (See supported types.)
+	GooglePlaceType string `json:"google_place_type,omitempty"`
 }
 
 // Represents the content of a contact message to be sent as the result of an

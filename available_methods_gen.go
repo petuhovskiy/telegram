@@ -19,17 +19,44 @@ func (b *Bot) GetMe(req *GetMeRequest) (*User, error) {
 	return &resp, err
 }
 
+type LogOutRequest struct{}
+
+// Use this method to log out from the cloud Bot API server before launching the
+// bot locally. You must log out the bot before running it locally, otherwise there
+// is no guarantee that the bot will receive updates. After a successful call, you
+// can immediately log in on a local server, but will not be able to log in back to
+// the cloud Bot API server for 10 minutes. Returns True on success. Requires no
+// parameters.
+func (b *Bot) LogOut(req *LogOutRequest) (json.RawMessage, error) {
+	return b.makeRequest("logOut", req)
+}
+
+type CloseRequest struct{}
+
+// Use this method to close the bot instance before moving it from one local server
+// to another. You need to delete the webhook before calling this method to ensure
+// that the bot isn't launched again after server restart. The method will return
+// error 429 in the first 10 minutes after the bot is launched. Returns True on
+// success. Requires no parameters.
+func (b *Bot) Close(req *CloseRequest) (json.RawMessage, error) {
+	return b.makeRequest("close", req)
+}
+
 type SendMessageRequest struct {
 	// Unique identifier for the target chat or username of the target channel (in the
 	// format @channelusername)
 	ChatID string `json:"chat_id"`
 
-	// Text of the message to be sent
+	// Text of the message to be sent, 1-4096 characters after entities parsing
 	Text string `json:"text"`
 
-	// Optional. Send Markdown or HTML, if you want Telegram apps to show bold, italic,
-	// fixed-width text or inline URLs in your bot's message.
+	// Optional. Mode for parsing entities in the message text. See formatting options
+	// for more details.
 	ParseMode string `json:"parse_mode,omitempty"`
+
+	// Optional. List of special entities that appear in message text, which can be
+	// specified instead of parse_mode
+	Entities []MessageEntity `json:"entities,omitempty"`
 
 	// Optional. Disables link previews for links in this message
 	DisableWebPagePreview bool `json:"disable_web_page_preview,omitempty"`
@@ -40,6 +67,10 @@ type SendMessageRequest struct {
 
 	// Optional. If the message is a reply, ID of the original message
 	ReplyToMessageID int `json:"reply_to_message_id,omitempty"`
+
+	// Optional. Pass True, if the message should be sent even if the specified
+	// replied-to message is not found
+	AllowSendingWithoutReply bool `json:"allow_sending_without_reply,omitempty"`
 
 	// Optional. Additional interface options. A JSON-serialized object for an inline
 	// keyboard, custom reply keyboard, instructions to remove reply keyboard or to
@@ -90,24 +121,29 @@ func (b *Bot) ForwardMessage(req *ForwardMessageRequest) (*Message, error) {
 	return &resp, err
 }
 
-type SendPhotoRequest struct {
+type CopyMessageRequest struct {
 	// Unique identifier for the target chat or username of the target channel (in the
 	// format @channelusername)
 	ChatID string `json:"chat_id"`
 
-	// Photo to send. Pass a file_id as String to send a photo that exists on the
-	// Telegram servers (recommended), pass an HTTP URL as a String for Telegram to get
-	// a photo from the Internet, or upload a new photo using multipart/form-data. More
-	// info on Sending Files »
-	Photo Fileable `json:"photo"`
+	// Unique identifier for the chat where the original message was sent (or channel
+	// username in the format @channelusername)
+	FromChatID string `json:"from_chat_id"`
 
-	// Optional. Photo caption (may also be used when resending photos by file_id),
-	// 0-1024 characters
+	// Message identifier in the chat specified in from_chat_id
+	MessageID int `json:"message_id"`
+
+	// Optional. New caption for media, 0-1024 characters after entities parsing. If
+	// not specified, the original caption is kept
 	Caption string `json:"caption,omitempty"`
 
-	// Optional. Send Markdown or HTML, if you want Telegram apps to show bold, italic,
-	// fixed-width text or inline URLs in the media caption.
+	// Optional. Mode for parsing entities in the new caption. See formatting options
+	// for more details.
 	ParseMode string `json:"parse_mode,omitempty"`
+
+	// Optional. List of special entities that appear in the new caption, which can be
+	// specified instead of parse_mode
+	CaptionEntities []MessageEntity `json:"caption_entities,omitempty"`
 
 	// Optional. Sends the message silently. Users will receive a notification with no
 	// sound.
@@ -115,6 +151,66 @@ type SendPhotoRequest struct {
 
 	// Optional. If the message is a reply, ID of the original message
 	ReplyToMessageID int `json:"reply_to_message_id,omitempty"`
+
+	// Optional. Pass True, if the message should be sent even if the specified
+	// replied-to message is not found
+	AllowSendingWithoutReply bool `json:"allow_sending_without_reply,omitempty"`
+
+	// Optional. Additional interface options. A JSON-serialized object for an inline
+	// keyboard, custom reply keyboard, instructions to remove reply keyboard or to
+	// force a reply from the user.
+	ReplyMarkup AnyKeyboard `json:"reply_markup,omitempty"`
+}
+
+// Use this method to copy messages of any kind. The method is analogous to the
+// method forwardMessages, but the copied message doesn't have a link to the
+// original message. Returns the MessageId of the sent message on success.
+func (b *Bot) CopyMessage(req *CopyMessageRequest) (*MessageId, error) {
+	j, err := b.makeRequest("copyMessage", req)
+	if err != nil {
+		return nil, err
+	}
+
+	var resp MessageId
+	err = json.Unmarshal(j, &resp)
+	return &resp, err
+}
+
+type SendPhotoRequest struct {
+	// Unique identifier for the target chat or username of the target channel (in the
+	// format @channelusername)
+	ChatID string `json:"chat_id"`
+
+	// Photo to send. Pass a file_id as String to send a photo that exists on the
+	// Telegram servers (recommended), pass an HTTP URL as a String for Telegram to get
+	// a photo from the Internet, or upload a new photo using multipart/form-data. The
+	// photo must be at most 10 MB in size. The photo's width and height must not
+	// exceed 10000 in total. Width and height ratio must be at most 20. More info on
+	// Sending Files »
+	Photo Fileable `json:"photo"`
+
+	// Optional. Photo caption (may also be used when resending photos by file_id),
+	// 0-1024 characters after entities parsing
+	Caption string `json:"caption,omitempty"`
+
+	// Optional. Mode for parsing entities in the photo caption. See formatting options
+	// for more details.
+	ParseMode string `json:"parse_mode,omitempty"`
+
+	// Optional. List of special entities that appear in the caption, which can be
+	// specified instead of parse_mode
+	CaptionEntities []MessageEntity `json:"caption_entities,omitempty"`
+
+	// Optional. Sends the message silently. Users will receive a notification with no
+	// sound.
+	DisableNotification bool `json:"disable_notification,omitempty"`
+
+	// Optional. If the message is a reply, ID of the original message
+	ReplyToMessageID int `json:"reply_to_message_id,omitempty"`
+
+	// Optional. Pass True, if the message should be sent even if the specified
+	// replied-to message is not found
+	AllowSendingWithoutReply bool `json:"allow_sending_without_reply,omitempty"`
 
 	// Optional. Additional interface options. A JSON-serialized object for an inline
 	// keyboard, custom reply keyboard, instructions to remove reply keyboard or to
@@ -145,12 +241,16 @@ type SendAudioRequest struct {
 	// multipart/form-data. More info on Sending Files »
 	Audio Fileable `json:"audio"`
 
-	// Optional. Audio caption, 0-1024 characters
+	// Optional. Audio caption, 0-1024 characters after entities parsing
 	Caption string `json:"caption,omitempty"`
 
-	// Optional. Send Markdown or HTML, if you want Telegram apps to show bold, italic,
-	// fixed-width text or inline URLs in the media caption.
+	// Optional. Mode for parsing entities in the audio caption. See formatting options
+	// for more details.
 	ParseMode string `json:"parse_mode,omitempty"`
+
+	// Optional. List of special entities that appear in the caption, which can be
+	// specified instead of parse_mode
+	CaptionEntities []MessageEntity `json:"caption_entities,omitempty"`
 
 	// Optional. Duration of the audio in seconds
 	Duration int `json:"duration,omitempty"`
@@ -163,9 +263,9 @@ type SendAudioRequest struct {
 
 	// Optional. Thumbnail of the file sent; can be ignored if thumbnail generation for
 	// the file is supported server-side. The thumbnail should be in JPEG format and
-	// less than 200 kB in size. A thumbnail‘s width and height should not exceed
-	// 320. Ignored if the file is not uploaded using multipart/form-data. Thumbnails
-	// can’t be reused and can be only uploaded as a new file, so you can pass
+	// less than 200 kB in size. A thumbnail's width and height should not exceed 320.
+	// Ignored if the file is not uploaded using multipart/form-data. Thumbnails can't
+	// be reused and can be only uploaded as a new file, so you can pass
 	// “attach://<file_attach_name>” if the thumbnail was uploaded using
 	// multipart/form-data under <file_attach_name>. More info on Sending Files »
 	Thumb Fileable `json:"thumb,omitempty"`
@@ -176,6 +276,10 @@ type SendAudioRequest struct {
 
 	// Optional. If the message is a reply, ID of the original message
 	ReplyToMessageID int `json:"reply_to_message_id,omitempty"`
+
+	// Optional. Pass True, if the message should be sent even if the specified
+	// replied-to message is not found
+	AllowSendingWithoutReply bool `json:"allow_sending_without_reply,omitempty"`
 
 	// Optional. Additional interface options. A JSON-serialized object for an inline
 	// keyboard, custom reply keyboard, instructions to remove reply keyboard or to
@@ -213,20 +317,28 @@ type SendDocumentRequest struct {
 
 	// Optional. Thumbnail of the file sent; can be ignored if thumbnail generation for
 	// the file is supported server-side. The thumbnail should be in JPEG format and
-	// less than 200 kB in size. A thumbnail‘s width and height should not exceed
-	// 320. Ignored if the file is not uploaded using multipart/form-data. Thumbnails
-	// can’t be reused and can be only uploaded as a new file, so you can pass
+	// less than 200 kB in size. A thumbnail's width and height should not exceed 320.
+	// Ignored if the file is not uploaded using multipart/form-data. Thumbnails can't
+	// be reused and can be only uploaded as a new file, so you can pass
 	// “attach://<file_attach_name>” if the thumbnail was uploaded using
 	// multipart/form-data under <file_attach_name>. More info on Sending Files »
 	Thumb Fileable `json:"thumb,omitempty"`
 
 	// Optional. Document caption (may also be used when resending documents by
-	// file_id), 0-1024 characters
+	// file_id), 0-1024 characters after entities parsing
 	Caption string `json:"caption,omitempty"`
 
-	// Optional. Send Markdown or HTML, if you want Telegram apps to show bold, italic,
-	// fixed-width text or inline URLs in the media caption.
+	// Optional. Mode for parsing entities in the document caption. See formatting
+	// options for more details.
 	ParseMode string `json:"parse_mode,omitempty"`
+
+	// Optional. List of special entities that appear in the caption, which can be
+	// specified instead of parse_mode
+	CaptionEntities []MessageEntity `json:"caption_entities,omitempty"`
+
+	// Optional. Disables automatic server-side content type detection for files
+	// uploaded using multipart/form-data
+	DisableContentTypeDetection bool `json:"disable_content_type_detection,omitempty"`
 
 	// Optional. Sends the message silently. Users will receive a notification with no
 	// sound.
@@ -234,6 +346,10 @@ type SendDocumentRequest struct {
 
 	// Optional. If the message is a reply, ID of the original message
 	ReplyToMessageID int `json:"reply_to_message_id,omitempty"`
+
+	// Optional. Pass True, if the message should be sent even if the specified
+	// replied-to message is not found
+	AllowSendingWithoutReply bool `json:"allow_sending_without_reply,omitempty"`
 
 	// Optional. Additional interface options. A JSON-serialized object for an inline
 	// keyboard, custom reply keyboard, instructions to remove reply keyboard or to
@@ -277,20 +393,24 @@ type SendVideoRequest struct {
 
 	// Optional. Thumbnail of the file sent; can be ignored if thumbnail generation for
 	// the file is supported server-side. The thumbnail should be in JPEG format and
-	// less than 200 kB in size. A thumbnail‘s width and height should not exceed
-	// 320. Ignored if the file is not uploaded using multipart/form-data. Thumbnails
-	// can’t be reused and can be only uploaded as a new file, so you can pass
+	// less than 200 kB in size. A thumbnail's width and height should not exceed 320.
+	// Ignored if the file is not uploaded using multipart/form-data. Thumbnails can't
+	// be reused and can be only uploaded as a new file, so you can pass
 	// “attach://<file_attach_name>” if the thumbnail was uploaded using
 	// multipart/form-data under <file_attach_name>. More info on Sending Files »
 	Thumb Fileable `json:"thumb,omitempty"`
 
 	// Optional. Video caption (may also be used when resending videos by file_id),
-	// 0-1024 characters
+	// 0-1024 characters after entities parsing
 	Caption string `json:"caption,omitempty"`
 
-	// Optional. Send Markdown or HTML, if you want Telegram apps to show bold, italic,
-	// fixed-width text or inline URLs in the media caption.
+	// Optional. Mode for parsing entities in the video caption. See formatting options
+	// for more details.
 	ParseMode string `json:"parse_mode,omitempty"`
+
+	// Optional. List of special entities that appear in the caption, which can be
+	// specified instead of parse_mode
+	CaptionEntities []MessageEntity `json:"caption_entities,omitempty"`
 
 	// Optional. Pass True, if the uploaded video is suitable for streaming
 	SupportsStreaming bool `json:"supports_streaming,omitempty"`
@@ -301,6 +421,10 @@ type SendVideoRequest struct {
 
 	// Optional. If the message is a reply, ID of the original message
 	ReplyToMessageID int `json:"reply_to_message_id,omitempty"`
+
+	// Optional. Pass True, if the message should be sent even if the specified
+	// replied-to message is not found
+	AllowSendingWithoutReply bool `json:"allow_sending_without_reply,omitempty"`
 
 	// Optional. Additional interface options. A JSON-serialized object for an inline
 	// keyboard, custom reply keyboard, instructions to remove reply keyboard or to
@@ -345,20 +469,24 @@ type SendAnimationRequest struct {
 
 	// Optional. Thumbnail of the file sent; can be ignored if thumbnail generation for
 	// the file is supported server-side. The thumbnail should be in JPEG format and
-	// less than 200 kB in size. A thumbnail‘s width and height should not exceed
-	// 320. Ignored if the file is not uploaded using multipart/form-data. Thumbnails
-	// can’t be reused and can be only uploaded as a new file, so you can pass
+	// less than 200 kB in size. A thumbnail's width and height should not exceed 320.
+	// Ignored if the file is not uploaded using multipart/form-data. Thumbnails can't
+	// be reused and can be only uploaded as a new file, so you can pass
 	// “attach://<file_attach_name>” if the thumbnail was uploaded using
 	// multipart/form-data under <file_attach_name>. More info on Sending Files »
 	Thumb Fileable `json:"thumb,omitempty"`
 
 	// Optional. Animation caption (may also be used when resending animation by
-	// file_id), 0-1024 characters
+	// file_id), 0-1024 characters after entities parsing
 	Caption string `json:"caption,omitempty"`
 
-	// Optional. Send Markdown or HTML, if you want Telegram apps to show bold, italic,
-	// fixed-width text or inline URLs in the media caption.
+	// Optional. Mode for parsing entities in the animation caption. See formatting
+	// options for more details.
 	ParseMode string `json:"parse_mode,omitempty"`
+
+	// Optional. List of special entities that appear in the caption, which can be
+	// specified instead of parse_mode
+	CaptionEntities []MessageEntity `json:"caption_entities,omitempty"`
 
 	// Optional. Sends the message silently. Users will receive a notification with no
 	// sound.
@@ -366,6 +494,10 @@ type SendAnimationRequest struct {
 
 	// Optional. If the message is a reply, ID of the original message
 	ReplyToMessageID int `json:"reply_to_message_id,omitempty"`
+
+	// Optional. Pass True, if the message should be sent even if the specified
+	// replied-to message is not found
+	AllowSendingWithoutReply bool `json:"allow_sending_without_reply,omitempty"`
 
 	// Optional. Additional interface options. A JSON-serialized object for an inline
 	// keyboard, custom reply keyboard, instructions to remove reply keyboard or to
@@ -399,12 +531,16 @@ type SendVoiceRequest struct {
 	// info on Sending Files »
 	Voice Fileable `json:"voice"`
 
-	// Optional. Voice message caption, 0-1024 characters
+	// Optional. Voice message caption, 0-1024 characters after entities parsing
 	Caption string `json:"caption,omitempty"`
 
-	// Optional. Send Markdown or HTML, if you want Telegram apps to show bold, italic,
-	// fixed-width text or inline URLs in the media caption.
+	// Optional. Mode for parsing entities in the voice message caption. See formatting
+	// options for more details.
 	ParseMode string `json:"parse_mode,omitempty"`
+
+	// Optional. List of special entities that appear in the caption, which can be
+	// specified instead of parse_mode
+	CaptionEntities []MessageEntity `json:"caption_entities,omitempty"`
 
 	// Optional. Duration of the voice message in seconds
 	Duration int `json:"duration,omitempty"`
@@ -416,6 +552,10 @@ type SendVoiceRequest struct {
 	// Optional. If the message is a reply, ID of the original message
 	ReplyToMessageID int `json:"reply_to_message_id,omitempty"`
 
+	// Optional. Pass True, if the message should be sent even if the specified
+	// replied-to message is not found
+	AllowSendingWithoutReply bool `json:"allow_sending_without_reply,omitempty"`
+
 	// Optional. Additional interface options. A JSON-serialized object for an inline
 	// keyboard, custom reply keyboard, instructions to remove reply keyboard or to
 	// force a reply from the user.
@@ -424,7 +564,7 @@ type SendVoiceRequest struct {
 
 // Use this method to send audio files, if you want Telegram clients to display the
 // file as a playable voice message. For this to work, your audio must be in an
-// .ogg file encoded with OPUS (other formats may be sent as Audio or Document). On
+// .OGG file encoded with OPUS (other formats may be sent as Audio or Document). On
 // success, the sent Message is returned. Bots can currently send voice messages of
 // up to 50 MB in size, this limit may be changed in the future.
 func (b *Bot) SendVoice(req *SendVoiceRequest) (*Message, error) {
@@ -457,9 +597,9 @@ type SendVideoNoteRequest struct {
 
 	// Optional. Thumbnail of the file sent; can be ignored if thumbnail generation for
 	// the file is supported server-side. The thumbnail should be in JPEG format and
-	// less than 200 kB in size. A thumbnail‘s width and height should not exceed
-	// 320. Ignored if the file is not uploaded using multipart/form-data. Thumbnails
-	// can’t be reused and can be only uploaded as a new file, so you can pass
+	// less than 200 kB in size. A thumbnail's width and height should not exceed 320.
+	// Ignored if the file is not uploaded using multipart/form-data. Thumbnails can't
+	// be reused and can be only uploaded as a new file, so you can pass
 	// “attach://<file_attach_name>” if the thumbnail was uploaded using
 	// multipart/form-data under <file_attach_name>. More info on Sending Files »
 	Thumb Fileable `json:"thumb,omitempty"`
@@ -470,6 +610,10 @@ type SendVideoNoteRequest struct {
 
 	// Optional. If the message is a reply, ID of the original message
 	ReplyToMessageID int `json:"reply_to_message_id,omitempty"`
+
+	// Optional. Pass True, if the message should be sent even if the specified
+	// replied-to message is not found
+	AllowSendingWithoutReply bool `json:"allow_sending_without_reply,omitempty"`
 
 	// Optional. Additional interface options. A JSON-serialized object for an inline
 	// keyboard, custom reply keyboard, instructions to remove reply keyboard or to
@@ -502,9 +646,22 @@ type SendLocationRequest struct {
 	// Longitude of the location
 	Longitude float64 `json:"longitude"`
 
+	// Optional. The radius of uncertainty for the location, measured in meters;
+	// 0-1500
+	HorizontalAccuracy float64 `json:"horizontal_accuracy,omitempty"`
+
 	// Optional. Period in seconds for which the location will be updated (see Live
 	// Locations, should be between 60 and 86400.
 	LivePeriod int `json:"live_period,omitempty"`
+
+	// Optional. For live locations, a direction in which the user is moving, in
+	// degrees. Must be between 1 and 360 if specified.
+	Heading int `json:"heading,omitempty"`
+
+	// Optional. For live locations, a maximum distance for proximity alerts about
+	// approaching another chat member, in meters. Must be between 1 and 100000 if
+	// specified.
+	ProximityAlertRadius int `json:"proximity_alert_radius,omitempty"`
 
 	// Optional. Sends the message silently. Users will receive a notification with no
 	// sound.
@@ -512,6 +669,10 @@ type SendLocationRequest struct {
 
 	// Optional. If the message is a reply, ID of the original message
 	ReplyToMessageID int `json:"reply_to_message_id,omitempty"`
+
+	// Optional. Pass True, if the message should be sent even if the specified
+	// replied-to message is not found
+	AllowSendingWithoutReply bool `json:"allow_sending_without_reply,omitempty"`
 
 	// Optional. Additional interface options. A JSON-serialized object for an inline
 	// keyboard, custom reply keyboard, instructions to remove reply keyboard or to
@@ -552,14 +713,26 @@ type EditMessageLiveLocationRequest struct {
 	// Longitude of new location
 	Longitude float64 `json:"longitude"`
 
+	// Optional. The radius of uncertainty for the location, measured in meters;
+	// 0-1500
+	HorizontalAccuracy float64 `json:"horizontal_accuracy,omitempty"`
+
+	// Optional. Direction in which the user is moving, in degrees. Must be between 1
+	// and 360 if specified.
+	Heading int `json:"heading,omitempty"`
+
+	// Optional. Maximum distance for proximity alerts about approaching another chat
+	// member, in meters. Must be between 1 and 100000 if specified.
+	ProximityAlertRadius int `json:"proximity_alert_radius,omitempty"`
+
 	// Optional. A JSON-serialized object for a new inline keyboard.
 	ReplyMarkup *InlineKeyboardMarkup `json:"reply_markup,omitempty"`
 }
 
 // Use this method to edit live location messages. A location can be edited until
 // its live_period expires or editing is explicitly disabled by a call to
-// stopMessageLiveLocation. On success, if the edited message was sent by the bot,
-// the edited Message is returned, otherwise True is returned.
+// stopMessageLiveLocation. On success, if the edited message is not an inline
+// message, the edited Message is returned, otherwise True is returned.
 func (b *Bot) EditMessageLiveLocation(req *EditMessageLiveLocationRequest) (*Message, error) {
 	j, err := b.makeRequest("editMessageLiveLocation", req)
 	if err != nil {
@@ -628,12 +801,22 @@ type SendVenueRequest struct {
 	// “food/icecream”.)
 	FoursquareType string `json:"foursquare_type,omitempty"`
 
+	// Optional. Google Places identifier of the venue
+	GooglePlaceID string `json:"google_place_id,omitempty"`
+
+	// Optional. Google Places type of the venue. (See supported types.)
+	GooglePlaceType string `json:"google_place_type,omitempty"`
+
 	// Optional. Sends the message silently. Users will receive a notification with no
 	// sound.
 	DisableNotification bool `json:"disable_notification,omitempty"`
 
 	// Optional. If the message is a reply, ID of the original message
 	ReplyToMessageID int `json:"reply_to_message_id,omitempty"`
+
+	// Optional. Pass True, if the message should be sent even if the specified
+	// replied-to message is not found
+	AllowSendingWithoutReply bool `json:"allow_sending_without_reply,omitempty"`
 
 	// Optional. Additional interface options. A JSON-serialized object for an inline
 	// keyboard, custom reply keyboard, instructions to remove reply keyboard or to
@@ -679,6 +862,10 @@ type SendContactRequest struct {
 	// Optional. If the message is a reply, ID of the original message
 	ReplyToMessageID int `json:"reply_to_message_id,omitempty"`
 
+	// Optional. Pass True, if the message should be sent even if the specified
+	// replied-to message is not found
+	AllowSendingWithoutReply bool `json:"allow_sending_without_reply,omitempty"`
+
 	// Optional. Additional interface options. A JSON-serialized object for an inline
 	// keyboard, custom reply keyboard, instructions to remove keyboard or to force a
 	// reply from the user.
@@ -700,14 +887,54 @@ func (b *Bot) SendContact(req *SendContactRequest) (*Message, error) {
 
 type SendPollRequest struct {
 	// Unique identifier for the target chat or username of the target channel (in the
-	// format @channelusername). A native poll can't be sent to a private chat.
+	// format @channelusername)
 	ChatID string `json:"chat_id"`
 
-	// Poll question, 1-255 characters
+	// Poll question, 1-300 characters
 	Question string `json:"question"`
 
-	// List of answer options, 2-10 strings 1-100 characters each
+	// A JSON-serialized list of answer options, 2-10 strings 1-100 characters each
 	Options []string `json:"options"`
+
+	// Optional. True, if the poll needs to be anonymous, defaults to True
+	IsAnonymous bool `json:"is_anonymous,omitempty"`
+
+	// Optional. Poll type, “quiz” or “regular”, defaults to “regular”
+	Type string `json:"type,omitempty"`
+
+	// Optional. True, if the poll allows multiple answers, ignored for polls in quiz
+	// mode, defaults to False
+	AllowsMultipleAnswers bool `json:"allows_multiple_answers,omitempty"`
+
+	// Optional. 0-based identifier of the correct answer option, required for polls in
+	// quiz mode
+	CorrectOptionID int `json:"correct_option_id,omitempty"`
+
+	// Optional. Text that is shown when a user chooses an incorrect answer or taps on
+	// the lamp icon in a quiz-style poll, 0-200 characters with at most 2 line feeds
+	// after entities parsing
+	Explanation string `json:"explanation,omitempty"`
+
+	// Optional. Mode for parsing entities in the explanation. See formatting options
+	// for more details.
+	ExplanationParseMode string `json:"explanation_parse_mode,omitempty"`
+
+	// Optional. List of special entities that appear in the poll explanation, which
+	// can be specified instead of parse_mode
+	ExplanationEntities []MessageEntity `json:"explanation_entities,omitempty"`
+
+	// Optional. Amount of time in seconds the poll will be active after creation,
+	// 5-600. Can't be used together with close_date.
+	OpenPeriod int `json:"open_period,omitempty"`
+
+	// Optional. Point in time (Unix timestamp) when the poll will be automatically
+	// closed. Must be at least 5 and no more than 600 seconds in the future. Can't be
+	// used together with open_period.
+	CloseDate int `json:"close_date,omitempty"`
+
+	// Optional. Pass True, if the poll needs to be immediately closed. This can be
+	// useful for poll preview.
+	IsClosed bool `json:"is_closed,omitempty"`
 
 	// Optional. Sends the message silently. Users will receive a notification with no
 	// sound.
@@ -716,16 +943,61 @@ type SendPollRequest struct {
 	// Optional. If the message is a reply, ID of the original message
 	ReplyToMessageID int `json:"reply_to_message_id,omitempty"`
 
+	// Optional. Pass True, if the message should be sent even if the specified
+	// replied-to message is not found
+	AllowSendingWithoutReply bool `json:"allow_sending_without_reply,omitempty"`
+
 	// Optional. Additional interface options. A JSON-serialized object for an inline
 	// keyboard, custom reply keyboard, instructions to remove reply keyboard or to
 	// force a reply from the user.
 	ReplyMarkup AnyKeyboard `json:"reply_markup,omitempty"`
 }
 
-// Use this method to send a native poll. A native poll can't be sent to a private
-// chat. On success, the sent Message is returned.
+// Use this method to send a native poll. On success, the sent Message is
+// returned.
 func (b *Bot) SendPoll(req *SendPollRequest) (*Message, error) {
 	j, err := b.makeRequest("sendPoll", req)
+	if err != nil {
+		return nil, err
+	}
+
+	var resp Message
+	err = json.Unmarshal(j, &resp)
+	return &resp, err
+}
+
+type SendDiceRequest struct {
+	// Unique identifier for the target chat or username of the target channel (in the
+	// format @channelusername)
+	ChatID string `json:"chat_id"`
+
+	// Optional. Emoji on which the dice throw animation is based. Currently, must be
+	// one of “”, “”, “”, “”, or “”. Dice can have values 1-6 for
+	// “” and “”, values 1-5 for “” and “”, and values 1-64 for “”.
+	// Defaults to “”
+	Emoji string `json:"emoji,omitempty"`
+
+	// Optional. Sends the message silently. Users will receive a notification with no
+	// sound.
+	DisableNotification bool `json:"disable_notification,omitempty"`
+
+	// Optional. If the message is a reply, ID of the original message
+	ReplyToMessageID int `json:"reply_to_message_id,omitempty"`
+
+	// Optional. Pass True, if the message should be sent even if the specified
+	// replied-to message is not found
+	AllowSendingWithoutReply bool `json:"allow_sending_without_reply,omitempty"`
+
+	// Optional. Additional interface options. A JSON-serialized object for an inline
+	// keyboard, custom reply keyboard, instructions to remove reply keyboard or to
+	// force a reply from the user.
+	ReplyMarkup AnyKeyboard `json:"reply_markup,omitempty"`
+}
+
+// Use this method to send an animated emoji that will display a random value. On
+// success, the sent Message is returned.
+func (b *Bot) SendDice(req *SendDiceRequest) (*Message, error) {
+	j, err := b.makeRequest("sendDice", req)
 	if err != nil {
 		return nil, err
 	}
@@ -742,7 +1014,7 @@ type SendChatActionRequest struct {
 
 	// Type of action to broadcast. Choose one, depending on what the user is about to
 	// receive: typing for text messages, upload_photo for photos, record_video or
-	// upload_video for videos, record_audio or upload_audio for audio files,
+	// upload_video for videos, record_voice or upload_voice for voice notes,
 	// upload_document for general files, find_location for location data,
 	// record_video_note or upload_video_note for video notes.
 	Action string `json:"action"`
@@ -774,8 +1046,8 @@ type GetUserProfilePhotosRequest struct {
 	// photos are returned.
 	Offset int `json:"offset,omitempty"`
 
-	// Optional. Limits the number of photos to be retrieved. Values between 1—100
-	// are accepted. Defaults to 100.
+	// Optional. Limits the number of photos to be retrieved. Values between 1-100 are
+	// accepted. Defaults to 100.
 	Limit int `json:"limit,omitempty"`
 }
 
@@ -829,13 +1101,13 @@ type KickChatMemberRequest struct {
 
 	// Optional. Date when the user will be unbanned, unix time. If user is banned for
 	// more than 366 days or less than 30 seconds from the current time they are
-	// considered to be banned forever
+	// considered to be banned forever. Applied for supergroups and channels only.
 	UntilDate int `json:"until_date,omitempty"`
 }
 
 // Use this method to kick a user from a group, a supergroup or a channel. In the
 // case of supergroups and channels, the user will not be able to return to the
-// group on their own using invite links, etc., unless unbanned first. The bot must
+// chat on their own using invite links, etc., unless unbanned first. The bot must
 // be an administrator in the chat for this to work and must have the appropriate
 // admin rights. Returns True on success.
 func (b *Bot) KickChatMember(req *KickChatMemberRequest) (json.RawMessage, error) {
@@ -849,12 +1121,18 @@ type UnbanChatMemberRequest struct {
 
 	// Unique identifier of the target user
 	UserID int `json:"user_id"`
+
+	// Optional. Do nothing if the user is not banned
+	OnlyIfBanned bool `json:"only_if_banned,omitempty"`
 }
 
 // Use this method to unban a previously kicked user in a supergroup or channel.
 // The user will not return to the group or channel automatically, but will be able
-// to join via link, etc. The bot must be an administrator for this to work.
-// Returns True on success.
+// to join via link, etc. The bot must be an administrator for this to work. By
+// default, this method guarantees that after the call the user is not a member of
+// the chat, but will be able to join it. So if the user is a member of the chat
+// they will also be removed from the chat. If you don't want this, use the
+// parameter only_if_banned. Returns True on success.
 func (b *Bot) UnbanChatMember(req *UnbanChatMemberRequest) (json.RawMessage, error) {
 	return b.makeRequest("unbanChatMember", req)
 }
@@ -867,7 +1145,7 @@ type RestrictChatMemberRequest struct {
 	// Unique identifier of the target user
 	UserID int `json:"user_id"`
 
-	// New user permissions
+	// A JSON-serialized object for new user permissions
 	Permissions *ChatPermissions `json:"permissions"`
 
 	// Optional. Date when restrictions will be lifted for the user, unix time. If user
@@ -891,6 +1169,9 @@ type PromoteChatMemberRequest struct {
 
 	// Unique identifier of the target user
 	UserID int `json:"user_id"`
+
+	// Optional. Pass True, if the administrator's presence in the chat is hidden
+	IsAnonymous bool `json:"is_anonymous,omitempty"`
 
 	// Optional. Pass True, if the administrator can change chat title, photo and other
 	// settings
@@ -918,7 +1199,7 @@ type PromoteChatMemberRequest struct {
 	CanPinMessages bool `json:"can_pin_messages,omitempty"`
 
 	// Optional. Pass True, if the administrator can add new administrators with a
-	// subset of his own privileges or demote administrators that he has promoted,
+	// subset of their own privileges or demote administrators that he has promoted,
 	// directly or indirectly (promoted by administrators that were appointed by him)
 	CanPromoteMembers bool `json:"can_promote_members,omitempty"`
 }
@@ -980,7 +1261,7 @@ type ExportChatInviteLinkRequest struct {
 // Note: Each administrator in a chat generates their own invite links. Bots can't
 // use invite links generated by other administrators. If you want your bot to work
 // with invite links, it will need to generate its own link using
-// exportChatInviteLink – after this the link will become available to the bot
+// exportChatInviteLink — after this the link will become available to the bot
 // via the getChat method. If your bot needs to generate a new invite link
 // replacing its previous one, use exportChatInviteLink again.
 //
@@ -1059,14 +1340,14 @@ type PinChatMessageRequest struct {
 
 	// Optional. Pass True, if it is not necessary to send a notification to all chat
 	// members about the new pinned message. Notifications are always disabled in
-	// channels.
+	// channels and private chats.
 	DisableNotification bool `json:"disable_notification,omitempty"`
 }
 
-// Use this method to pin a message in a group, a supergroup, or a channel. The bot
-// must be an administrator in the chat for this to work and must have the
-// ‘can_pin_messages’ admin right in the supergroup or ‘can_edit_messages’
-// admin right in the channel. Returns True on success.
+// Use this method to add a message to the list of pinned messages in a chat. If
+// the chat is not a private chat, the bot must be an administrator in the chat for
+// this to work and must have the 'can_pin_messages' admin right in a supergroup or
+// 'can_edit_messages' admin right in a channel. Returns True on success.
 func (b *Bot) PinChatMessage(req *PinChatMessageRequest) (json.RawMessage, error) {
 	return b.makeRequest("pinChatMessage", req)
 }
@@ -1075,14 +1356,33 @@ type UnpinChatMessageRequest struct {
 	// Unique identifier for the target chat or username of the target channel (in the
 	// format @channelusername)
 	ChatID string `json:"chat_id"`
+
+	// Optional. Identifier of a message to unpin. If not specified, the most recent
+	// pinned message (by sending date) will be unpinned.
+	MessageID int `json:"message_id,omitempty"`
 }
 
-// Use this method to unpin a message in a group, a supergroup, or a channel. The
-// bot must be an administrator in the chat for this to work and must have the
-// ‘can_pin_messages’ admin right in the supergroup or ‘can_edit_messages’
-// admin right in the channel. Returns True on success.
+// Use this method to remove a message from the list of pinned messages in a chat.
+// If the chat is not a private chat, the bot must be an administrator in the chat
+// for this to work and must have the 'can_pin_messages' admin right in a
+// supergroup or 'can_edit_messages' admin right in a channel. Returns True on
+// success.
 func (b *Bot) UnpinChatMessage(req *UnpinChatMessageRequest) (json.RawMessage, error) {
 	return b.makeRequest("unpinChatMessage", req)
+}
+
+type UnpinAllChatMessagesRequest struct {
+	// Unique identifier for the target chat or username of the target channel (in the
+	// format @channelusername)
+	ChatID string `json:"chat_id"`
+}
+
+// Use this method to clear the list of pinned messages in a chat. If the chat is
+// not a private chat, the bot must be an administrator in the chat for this to
+// work and must have the 'can_pin_messages' admin right in a supergroup or
+// 'can_edit_messages' admin right in a channel. Returns True on success.
+func (b *Bot) UnpinAllChatMessages(req *UnpinAllChatMessagesRequest) (json.RawMessage, error) {
+	return b.makeRequest("unpinAllChatMessages", req)
 }
 
 type LeaveChatRequest struct {
@@ -1216,7 +1516,7 @@ type AnswerCallbackQueryRequest struct {
 
 	// Optional. URL that will be opened by the user's client. If you have created a
 	// Game and accepted the conditions via @Botfather, specify the URL that opens your
-	// game – note that this will only work if the query comes from a callback_game
+	// game — note that this will only work if the query comes from a callback_game
 	// button.
 	//
 	// Otherwise, you may use links like t.me/your_bot?start=XXXX that open your bot
@@ -1241,4 +1541,31 @@ type AnswerCallbackQueryRequest struct {
 //
 func (b *Bot) AnswerCallbackQuery(req *AnswerCallbackQueryRequest) (json.RawMessage, error) {
 	return b.makeRequest("answerCallbackQuery", req)
+}
+
+type SetMyCommandsRequest struct {
+	// A JSON-serialized list of bot commands to be set as the list of the bot's
+	// commands. At most 100 commands can be specified.
+	Commands []BotCommand `json:"commands"`
+}
+
+// Use this method to change the list of the bot's commands. Returns True on
+// success.
+func (b *Bot) SetMyCommands(req *SetMyCommandsRequest) (json.RawMessage, error) {
+	return b.makeRequest("setMyCommands", req)
+}
+
+type GetMyCommandsRequest struct{}
+
+// Use this method to get the current list of the bot's commands. Requires no
+// parameters. Returns Array of BotCommand on success.
+func (b *Bot) GetMyCommands(req *GetMyCommandsRequest) (*BotCommand, error) {
+	j, err := b.makeRequest("getMyCommands", req)
+	if err != nil {
+		return nil, err
+	}
+
+	var resp BotCommand
+	err = json.Unmarshal(j, &resp)
+	return &resp, err
 }

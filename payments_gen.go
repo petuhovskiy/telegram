@@ -28,13 +28,13 @@ type SendInvoiceRequest struct {
 	// Three-letter ISO 4217 currency code, see more on currencies
 	Currency string `json:"currency"`
 
-	// Price breakdown, a list of components (e.g. product price, tax, discount,
-	// delivery cost, delivery tax, bonus, etc.)
+	// Price breakdown, a JSON-serialized list of components (e.g. product price, tax,
+	// discount, delivery cost, delivery tax, bonus, etc.)
 	Prices []LabeledPrice `json:"prices"`
 
-	// Optional. JSON-encoded data about the invoice, which will be shared with the
-	// payment provider. A detailed description of required fields should be provided
-	// by the payment provider.
+	// Optional. A JSON-serialized data about the invoice, which will be shared with
+	// the payment provider. A detailed description of required fields should be
+	// provided by the payment provider.
 	ProviderData string `json:"provider_data,omitempty"`
 
 	// Optional. URL of the product photo for the invoice. Can be a photo of the goods
@@ -81,6 +81,10 @@ type SendInvoiceRequest struct {
 
 	// Optional. If the message is a reply, ID of the original message
 	ReplyToMessageID int `json:"reply_to_message_id,omitempty"`
+
+	// Optional. Pass True, if the message should be sent even if the specified
+	// replied-to message is not found
+	AllowSendingWithoutReply bool `json:"allow_sending_without_reply,omitempty"`
 
 	// Optional. A JSON-serialized object for an inline keyboard. If empty, one 'Pay
 	// total price' button will be shown. If not empty, the first button must be a Pay

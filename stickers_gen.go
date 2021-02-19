@@ -22,7 +22,7 @@ type Sticker struct {
 	// True, if the sticker is animated
 	IsAnimated bool `json:"is_animated"`
 
-	// Optional. Sticker thumbnail in the .webp or .jpg format
+	// Optional. Sticker thumbnail in the .WEBP or .JPG format
 	Thumb *PhotoSize `json:"thumb,omitempty"`
 
 	// Optional. Emoji associated with the sticker
@@ -54,6 +54,9 @@ type StickerSet struct {
 
 	// List of all set stickers
 	Stickers []Sticker `json:"stickers"`
+
+	// Optional. Sticker set thumbnail in the .WEBP or .TGS format
+	Thumb *PhotoSize `json:"thumb,omitempty"`
 }
 
 // This object describes the position on faces where a mask should be placed by
@@ -84,7 +87,7 @@ type SendStickerRequest struct {
 
 	// Sticker to send. Pass a file_id as String to send a file that exists on the
 	// Telegram servers (recommended), pass an HTTP URL as a String for Telegram to get
-	// a .webp file from the Internet, or upload a new one using multipart/form-data.
+	// a .WEBP file from the Internet, or upload a new one using multipart/form-data.
 	// More info on Sending Files »
 	Sticker Fileable `json:"sticker"`
 
@@ -94,6 +97,10 @@ type SendStickerRequest struct {
 
 	// Optional. If the message is a reply, ID of the original message
 	ReplyToMessageID int `json:"reply_to_message_id,omitempty"`
+
+	// Optional. Pass True, if the message should be sent even if the specified
+	// replied-to message is not found
+	AllowSendingWithoutReply bool `json:"allow_sending_without_reply,omitempty"`
 
 	// Optional. Additional interface options. A JSON-serialized object for an inline
 	// keyboard, custom reply keyboard, instructions to remove reply keyboard or to
@@ -136,13 +143,13 @@ type UploadStickerFileRequest struct {
 	// User identifier of sticker file owner
 	UserID int `json:"user_id"`
 
-	// Png image with the sticker, must be up to 512 kilobytes in size, dimensions must
+	// PNG image with the sticker, must be up to 512 kilobytes in size, dimensions must
 	// not exceed 512px, and either width or height must be exactly 512px. More info on
 	// Sending Files »
 	PngSticker *InputFile `json:"png_sticker"`
 }
 
-// Use this method to upload a .png file with a sticker for later use in
+// Use this method to upload a .PNG file with a sticker for later use in
 // createNewStickerSet and addStickerToSet methods (can be used multiple times).
 // Returns the uploaded File on success.
 func (b *Bot) UploadStickerFile(req *UploadStickerFileRequest) (*File, error) {
@@ -169,12 +176,18 @@ type CreateNewStickerSetRequest struct {
 	// Sticker set title, 1-64 characters
 	Title string `json:"title"`
 
-	// Png image with the sticker, must be up to 512 kilobytes in size, dimensions must
-	// not exceed 512px, and either width or height must be exactly 512px. Pass a
-	// file_id as a String to send a file that already exists on the Telegram servers,
-	// pass an HTTP URL as a String for Telegram to get a file from the Internet, or
-	// upload a new one using multipart/form-data. More info on Sending Files »
-	PngSticker Fileable `json:"png_sticker"`
+	// Optional. PNG image with the sticker, must be up to 512 kilobytes in size,
+	// dimensions must not exceed 512px, and either width or height must be exactly
+	// 512px. Pass a file_id as a String to send a file that already exists on the
+	// Telegram servers, pass an HTTP URL as a String for Telegram to get a file from
+	// the Internet, or upload a new one using multipart/form-data. More info on
+	// Sending Files »
+	PngSticker Fileable `json:"png_sticker,omitempty"`
+
+	// Optional. TGS animation with the sticker, uploaded using multipart/form-data.
+	// See https://core.telegram.org/animated_stickers#technical-requirements for
+	// technical requirements
+	TgsSticker *InputFile `json:"tgs_sticker,omitempty"`
 
 	// One or more emoji corresponding to the sticker
 	Emojis string `json:"emojis"`
@@ -187,8 +200,9 @@ type CreateNewStickerSetRequest struct {
 	MaskPosition *MaskPosition `json:"mask_position,omitempty"`
 }
 
-// Use this method to create new sticker set owned by a user. The bot will be able
-// to edit the created sticker set. Returns True on success.
+// Use this method to create a new sticker set owned by a user. The bot will be
+// able to edit the sticker set thus created. You must use exactly one of the
+// fields png_sticker or tgs_sticker. Returns True on success.
 func (b *Bot) CreateNewStickerSet(req *CreateNewStickerSetRequest) (json.RawMessage, error) {
 	return b.makeRequest("createNewStickerSet", req)
 }
@@ -200,12 +214,18 @@ type AddStickerToSetRequest struct {
 	// Sticker set name
 	Name string `json:"name"`
 
-	// Png image with the sticker, must be up to 512 kilobytes in size, dimensions must
-	// not exceed 512px, and either width or height must be exactly 512px. Pass a
-	// file_id as a String to send a file that already exists on the Telegram servers,
-	// pass an HTTP URL as a String for Telegram to get a file from the Internet, or
-	// upload a new one using multipart/form-data. More info on Sending Files »
-	PngSticker Fileable `json:"png_sticker"`
+	// Optional. PNG image with the sticker, must be up to 512 kilobytes in size,
+	// dimensions must not exceed 512px, and either width or height must be exactly
+	// 512px. Pass a file_id as a String to send a file that already exists on the
+	// Telegram servers, pass an HTTP URL as a String for Telegram to get a file from
+	// the Internet, or upload a new one using multipart/form-data. More info on
+	// Sending Files »
+	PngSticker Fileable `json:"png_sticker,omitempty"`
+
+	// Optional. TGS animation with the sticker, uploaded using multipart/form-data.
+	// See https://core.telegram.org/animated_stickers#technical-requirements for
+	// technical requirements
+	TgsSticker *InputFile `json:"tgs_sticker,omitempty"`
 
 	// One or more emoji corresponding to the sticker
 	Emojis string `json:"emojis"`
@@ -215,7 +235,10 @@ type AddStickerToSetRequest struct {
 	MaskPosition *MaskPosition `json:"mask_position,omitempty"`
 }
 
-// Use this method to add a new sticker to a set created by the bot. Returns True
+// Use this method to add a new sticker to a set created by the bot. You must use
+// exactly one of the fields png_sticker or tgs_sticker. Animated stickers can be
+// added to animated sticker sets and only to them. Animated sticker sets can have
+// up to 50 stickers. Static sticker sets can have up to 120 stickers. Returns True
 // on success.
 func (b *Bot) AddStickerToSet(req *AddStickerToSetRequest) (json.RawMessage, error) {
 	return b.makeRequest("addStickerToSet", req)
@@ -230,7 +253,7 @@ type SetStickerPositionInSetRequest struct {
 }
 
 // Use this method to move a sticker in a set created by the bot to a specific
-// position . Returns True on success.
+// position. Returns True on success.
 func (b *Bot) SetStickerPositionInSet(req *SetStickerPositionInSetRequest) (json.RawMessage, error) {
 	return b.makeRequest("setStickerPositionInSet", req)
 }
@@ -244,4 +267,29 @@ type DeleteStickerFromSetRequest struct {
 // on success.
 func (b *Bot) DeleteStickerFromSet(req *DeleteStickerFromSetRequest) (json.RawMessage, error) {
 	return b.makeRequest("deleteStickerFromSet", req)
+}
+
+type SetStickerSetThumbRequest struct {
+	// Sticker set name
+	Name string `json:"name"`
+
+	// User identifier of the sticker set owner
+	UserID int `json:"user_id"`
+
+	// Optional. A PNG image with the thumbnail, must be up to 128 kilobytes in size
+	// and have width and height exactly 100px, or a TGS animation with the thumbnail
+	// up to 32 kilobytes in size; see
+	// https://core.telegram.org/animated_stickers#technical-requirements for animated
+	// sticker technical requirements. Pass a file_id as a String to send a file that
+	// already exists on the Telegram servers, pass an HTTP URL as a String for
+	// Telegram to get a file from the Internet, or upload a new one using
+	// multipart/form-data. More info on Sending Files ». Animated sticker set
+	// thumbnail can't be uploaded via HTTP URL.
+	Thumb Fileable `json:"thumb,omitempty"`
+}
+
+// Use this method to set the thumbnail of a sticker set. Animated thumbnails can
+// be set for animated sticker sets only. Returns True on success.
+func (b *Bot) SetStickerSetThumb(req *SetStickerSetThumbRequest) (json.RawMessage, error) {
+	return b.makeRequest("setStickerSetThumb", req)
 }
