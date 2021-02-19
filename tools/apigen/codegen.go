@@ -15,6 +15,7 @@ type GenOpts struct {
 	Dest             string
 	TypeExceptions   []TypeException
 	MethodExceptions []MethodException
+	StructExceptions []StructException
 }
 
 type TypeException struct {
@@ -26,6 +27,11 @@ type TypeException struct {
 type MethodException struct {
 	Method       string
 	OverrideType string
+}
+
+type StructException struct {
+	StructName string
+	Skip       bool
 }
 
 func ChapterNameToFilename(name string) string {
@@ -202,6 +208,17 @@ func CodegenStruct(obj *Object, f *jen.File, opts *GenOpts) error {
 	typeName, err := TypeNameToGo(name)
 	if err != nil {
 		return err
+	}
+
+	for _, ex := range opts.StructExceptions {
+		if ex.StructName != typeName {
+			continue
+		}
+
+		if ex.Skip {
+			log.WithField("typeName", typeName).Info("skipping struct code generation")
+			return nil
+		}
 	}
 
 	var fields []jen.Code

@@ -7,12 +7,12 @@ import "encoding/json"
 // This object represents an incoming update.
 // At most one of the optional parameters can be present in any given update.
 type Update struct {
-	// The update‘s unique identifier. Update identifiers start from a certain
-	// positive number and increase sequentially. This ID becomes especially handy if
-	// you’re using Webhooks, since it allows you to ignore repeated updates or to
-	// restore the correct update sequence, should they get out of order. If there are
-	// no new updates for at least a week, then identifier of the next update will be
-	// chosen randomly instead of sequentially.
+	// The update's unique identifier. Update identifiers start from a certain positive
+	// number and increase sequentially. This ID becomes especially handy if you're
+	// using Webhooks, since it allows you to ignore repeated updates or to restore the
+	// correct update sequence, should they get out of order. If there are no new
+	// updates for at least a week, then identifier of the next update will be chosen
+	// randomly instead of sequentially.
 	UpdateID int `json:"update_id"`
 
 	// Optional. New incoming message of any kind — text, photo, sticker, etc.
@@ -48,6 +48,10 @@ type Update struct {
 	// Optional. New poll state. Bots receive only updates about stopped polls and
 	// polls, which are sent by the bot
 	Poll *Poll `json:"poll,omitempty"`
+
+	// Optional. A user changed their answer in a non-anonymous poll. Bots receive new
+	// votes only in polls that were sent by the bot itself.
+	PollAnswer *PollAnswer `json:"poll_answer,omitempty"`
 }
 
 type GetUpdatesRequest struct {
@@ -60,8 +64,8 @@ type GetUpdatesRequest struct {
 	// previous updates will forgotten.
 	Offset int `json:"offset,omitempty"`
 
-	// Optional. Limits the number of updates to be retrieved. Values between 1—100
-	// are accepted. Defaults to 100.
+	// Optional. Limits the number of updates to be retrieved. Values between 1-100 are
+	// accepted. Defaults to 100.
 	Limit int `json:"limit,omitempty"`
 
 	// Optional. Timeout in seconds for long polling. Defaults to 0, i.e. usual short
@@ -69,11 +73,12 @@ type GetUpdatesRequest struct {
 	// only.
 	Timeout int `json:"timeout,omitempty"`
 
-	// Optional. List the types of updates you want your bot to receive. For example,
-	// specify [“message”, “edited_channel_post”, “callback_query”] to only
-	// receive updates of these types. See Update for a complete list of available
-	// update types. Specify an empty list to receive all updates regardless of type
-	// (default). If not specified, the previous setting will be used.
+	// Optional. A JSON-serialized list of the update types you want your bot to
+	// receive. For example, specify [“message”, “edited_channel_post”,
+	// “callback_query”] to only receive updates of these types. See Update for a
+	// complete list of available update types. Specify an empty list to receive all
+	// updates regardless of type (default). If not specified, the previous setting
+	// will be used.
 	//
 	// Please note that this parameter doesn't affect updates created before the call
 	// to the getUpdates, so unwanted updates may be received for a short period of
@@ -109,22 +114,29 @@ type SetWebhookRequest struct {
 	// can be checked. See our self-signed guide for details.
 	Certificate *InputFile `json:"certificate,omitempty"`
 
+	// Optional. The fixed IP address which will be used to send webhook requests
+	// instead of the IP address resolved through DNS
+	IpAddress string `json:"ip_address,omitempty"`
+
 	// Optional. Maximum allowed number of simultaneous HTTPS connections to the
 	// webhook for update delivery, 1-100. Defaults to 40. Use lower values to limit
-	// the load on your bot‘s server, and higher values to increase your bot’s
+	// the load on your bot's server, and higher values to increase your bot's
 	// throughput.
 	MaxConnections int `json:"max_connections,omitempty"`
 
-	// Optional. List the types of updates you want your bot to receive. For example,
-	// specify [“message”, “edited_channel_post”, “callback_query”] to only
-	// receive updates of these types. See Update for a complete list of available
-	// update types. Specify an empty list to receive all updates regardless of type
-	// (default). If not specified, the previous setting will be used.
-	//
+	// Optional. A JSON-serialized list of the update types you want your bot to
+	// receive. For example, specify [“message”, “edited_channel_post”,
+	// “callback_query”] to only receive updates of these types. See Update for a
+	// complete list of available update types. Specify an empty list to receive all
+	// updates regardless of type (default). If not specified, the previous setting
+	// will be used.
 	// Please note that this parameter doesn't affect updates created before the call
 	// to the setWebhook, so unwanted updates may be received for a short period of
 	// time.
 	AllowedUpdates []string `json:"allowed_updates,omitempty"`
+
+	// Optional. Pass True to drop all pending updates
+	DropPendingUpdates bool `json:"drop_pending_updates,omitempty"`
 }
 
 // Use this method to specify a url and receive incoming updates via an outgoing
@@ -135,7 +147,7 @@ type SetWebhookRequest struct {
 //
 // If you'd like to make sure that the Webhook request comes from Telegram, we
 // recommend using a secret path in the URL, e.g. https://www.example.com/<token>.
-// Since nobody else knows your bot‘s token, you can be pretty sure it’s us.
+// Since nobody else knows your bot's token, you can be pretty sure it's us.
 //
 //
 // Notes
@@ -152,10 +164,13 @@ func (b *Bot) SetWebhook(req *SetWebhookRequest) (json.RawMessage, error) {
 	return b.makeRequest("setWebhook", req)
 }
 
-type DeleteWebhookRequest struct{}
+type DeleteWebhookRequest struct {
+	// Optional. Pass True to drop all pending updates
+	DropPendingUpdates bool `json:"drop_pending_updates,omitempty"`
+}
 
 // Use this method to remove webhook integration if you decide to switch back to
-// getUpdates. Returns True on success. Requires no parameters.
+// getUpdates. Returns True on success.
 func (b *Bot) DeleteWebhook(req *DeleteWebhookRequest) (json.RawMessage, error) {
 	return b.makeRequest("deleteWebhook", req)
 }
@@ -186,6 +201,9 @@ type WebhookInfo struct {
 
 	// Number of updates awaiting delivery
 	PendingUpdateCount int `json:"pending_update_count"`
+
+	// Optional. Currently used webhook IP address
+	IpAddress string `json:"ip_address,omitempty"`
 
 	// Optional. Unix time for the most recent error that happened when trying to
 	// deliver an update via webhook

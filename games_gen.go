@@ -19,9 +19,13 @@ type SendGameRequest struct {
 	// Optional. If the message is a reply, ID of the original message
 	ReplyToMessageID int `json:"reply_to_message_id,omitempty"`
 
-	// Optional. A JSON-serialized object for an inline keyboard. If empty, one ‘Play
-	// game_title’ button will be shown. If not empty, the first button must launch
-	// the game.
+	// Optional. Pass True, if the message should be sent even if the specified
+	// replied-to message is not found
+	AllowSendingWithoutReply bool `json:"allow_sending_without_reply,omitempty"`
+
+	// Optional. A JSON-serialized object for an inline keyboard. If empty, one 'Play
+	// game_title' button will be shown. If not empty, the first button must launch the
+	// game.
 	ReplyMarkup *InlineKeyboardMarkup `json:"reply_markup,omitempty"`
 }
 
@@ -125,11 +129,11 @@ type GetGameHighScoresRequest struct {
 }
 
 // Use this method to get data for high score tables. Will return the score of the
-// specified user and several of his neighbors in a game. On success, returns an
+// specified user and several of their neighbors in a game. On success, returns an
 // Array of GameHighScore objects.
 //
 //
-// This method will currently return scores for the target user, plus two of his
+// This method will currently return scores for the target user, plus two of their
 // closest neighbors on each side. Will also return the top three users if the user
 // and his neighbors are not among them. Please note that this behavior is subject
 // to change.
@@ -147,7 +151,7 @@ func (b *Bot) GetGameHighScores(req *GetGameHighScoresRequest) (*GameHighScore, 
 
 // This object represents one row of the high scores table for a game.
 //
-// And that‘s about all we’ve got for now.
+// And that's about all we've got for now.
 // If you've got any questions, please check out our Bot FAQ »
 type GameHighScore struct {
 	// Position in high score table for the game

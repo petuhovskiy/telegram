@@ -18,12 +18,16 @@ type EditMessageTextRequest struct {
 	// the inline message
 	InlineMessageID string `json:"inline_message_id,omitempty"`
 
-	// New text of the message
+	// New text of the message, 1-4096 characters after entities parsing
 	Text string `json:"text"`
 
-	// Optional. Send Markdown or HTML, if you want Telegram apps to show bold, italic,
-	// fixed-width text or inline URLs in your bot's message.
+	// Optional. Mode for parsing entities in the message text. See formatting options
+	// for more details.
 	ParseMode string `json:"parse_mode,omitempty"`
+
+	// Optional. List of special entities that appear in message text, which can be
+	// specified instead of parse_mode
+	Entities []MessageEntity `json:"entities,omitempty"`
 
 	// Optional. Disables link previews for links in this message
 	DisableWebPagePreview bool `json:"disable_web_page_preview,omitempty"`
@@ -32,8 +36,9 @@ type EditMessageTextRequest struct {
 	ReplyMarkup *InlineKeyboardMarkup `json:"reply_markup,omitempty"`
 }
 
-// Use this method to edit text and game messages. On success, if edited message is
-// sent by the bot, the edited Message is returned, otherwise True is returned.
+// Use this method to edit text and game messages. On success, if the edited
+// message is not an inline message, the edited Message is returned, otherwise True
+// is returned.
 func (b *Bot) EditMessageText(req *EditMessageTextRequest) (*Message, error) {
 	j, err := b.makeRequest("editMessageText", req)
 	if err != nil {
@@ -59,19 +64,24 @@ type EditMessageCaptionRequest struct {
 	// the inline message
 	InlineMessageID string `json:"inline_message_id,omitempty"`
 
-	// Optional. New caption of the message
+	// Optional. New caption of the message, 0-1024 characters after entities parsing
 	Caption string `json:"caption,omitempty"`
 
-	// Optional. Send Markdown or HTML, if you want Telegram apps to show bold, italic,
-	// fixed-width text or inline URLs in the media caption.
+	// Optional. Mode for parsing entities in the message caption. See formatting
+	// options for more details.
 	ParseMode string `json:"parse_mode,omitempty"`
+
+	// Optional. List of special entities that appear in the caption, which can be
+	// specified instead of parse_mode
+	CaptionEntities []MessageEntity `json:"caption_entities,omitempty"`
 
 	// Optional. A JSON-serialized object for an inline keyboard.
 	ReplyMarkup *InlineKeyboardMarkup `json:"reply_markup,omitempty"`
 }
 
-// Use this method to edit captions of messages. On success, if edited message is
-// sent by the bot, the edited Message is returned, otherwise True is returned.
+// Use this method to edit captions of messages. On success, if the edited message
+// is not an inline message, the edited Message is returned, otherwise True is
+// returned.
 func (b *Bot) EditMessageCaption(req *EditMessageCaptionRequest) (*Message, error) {
 	j, err := b.makeRequest("editMessageCaption", req)
 	if err != nil {
@@ -105,11 +115,12 @@ type EditMessageMediaRequest struct {
 }
 
 // Use this method to edit animation, audio, document, photo, or video messages. If
-// a message is a part of a message album, then it can be edited only to a photo or
-// a video. Otherwise, message type can be changed arbitrarily. When inline message
-// is edited, new file can't be uploaded. Use previously uploaded file via its
-// file_id or specify a URL. On success, if the edited message was sent by the bot,
-// the edited Message is returned, otherwise True is returned.
+// a message is part of a message album, then it can be edited only to an audio for
+// audio albums, only to a document for document albums and to a photo or a video
+// otherwise. When an inline message is edited, a new file can't be uploaded. Use a
+// previously uploaded file via its file_id or specify a URL. On success, if the
+// edited message was sent by the bot, the edited Message is returned, otherwise
+// True is returned.
 func (b *Bot) EditMessageMedia(req *EditMessageMediaRequest) (*Message, error) {
 	j, err := b.makeRequest("editMessageMedia", req)
 	if err != nil {
@@ -139,9 +150,9 @@ type EditMessageReplyMarkupRequest struct {
 	ReplyMarkup *InlineKeyboardMarkup `json:"reply_markup,omitempty"`
 }
 
-// Use this method to edit only the reply markup of messages. On success, if edited
-// message is sent by the bot, the edited Message is returned, otherwise True is
-// returned.
+// Use this method to edit only the reply markup of messages. On success, if the
+// edited message is not an inline message, the edited Message is returned,
+// otherwise True is returned.
 func (b *Bot) EditMessageReplyMarkup(req *EditMessageReplyMarkupRequest) (*Message, error) {
 	j, err := b.makeRequest("editMessageReplyMarkup", req)
 	if err != nil {
@@ -190,6 +201,8 @@ type DeleteMessageRequest struct {
 // Use this method to delete a message, including service messages, with the
 // following limitations:
 // - A message can only be deleted if it was sent less than 48 hours ago.
+// - A dice message in a private chat can only be deleted if it was sent more than
+// 24 hours ago.
 // - Bots can delete outgoing messages in private chats, groups, and supergroups.
 // - Bots can delete incoming messages in private chats.
 // - Bots granted can_post_messages permissions can delete outgoing messages in

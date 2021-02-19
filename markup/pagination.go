@@ -15,14 +15,14 @@ func Pagination(pageSize, rowSize, length, page int, setPage func(int) string, e
 	var arrows []telegram.InlineKeyboardButton
 	if page > 0 {
 		arrows = append(arrows, telegram.InlineKeyboardButton{
-			Text:         "<-",
+			Text:         "⬅️",
 			CallbackData: setPage(page - 1),
 		})
 	}
 
 	if page+1 < pages {
 		arrows = append(arrows, telegram.InlineKeyboardButton{
-			Text:         "->",
+			Text:         "➡️",
 			CallbackData: setPage(page + 1),
 		})
 	}
@@ -40,14 +40,14 @@ func Pagination2(rowSize, page int, hasNextPage bool, setPage func(int) string, 
 	var arrows []telegram.InlineKeyboardButton
 	if page > 0 {
 		arrows = append(arrows, telegram.InlineKeyboardButton{
-			Text:         "<-",
+			Text:         "⬅️",
 			CallbackData: setPage(page - 1),
 		})
 	}
 
 	if hasNextPage {
 		arrows = append(arrows, telegram.InlineKeyboardButton{
-			Text:         "->",
+			Text:         "➡️",
 			CallbackData: setPage(page + 1),
 		})
 	}

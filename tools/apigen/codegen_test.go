@@ -34,6 +34,11 @@ func TestCodegen(t *testing.T) {
 				TypeString: "InlineKeyboardMarkup or ReplyKeyboardMarkup or ReplyKeyboardRemove or ForceReply",
 				GoType:     "AnyKeyboard",
 			},
+			{
+				Domain:     "",
+				TypeString: "InputMessageContent",
+				GoType:     "InputMessageContent",
+			},
 		},
 		MethodExceptions: []MethodException{
 			{
@@ -43,6 +48,16 @@ func TestCodegen(t *testing.T) {
 			{
 				Method:       "getUpdates",
 				OverrideType: "[]Update",
+			},
+		},
+		StructExceptions: []StructException{
+			{
+				StructName: "InlineQueryResult",
+				Skip:       true,
+			},
+			{
+				StructName: "InputMessageContent",
+				Skip:       true,
 			},
 		},
 	})
