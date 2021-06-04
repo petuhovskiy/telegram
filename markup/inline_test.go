@@ -9,7 +9,7 @@ import (
 	"github.com/petuhovskiy/telegram"
 )
 
-// TestMarshalRequest проверяет что в результате ReplyMarkup не маршалится и не уходит в составе запроса.
+// TestMarshalRequest tests that empty ReplyMarkup will be not included in the request.
 func TestMarshalRequest(t *testing.T) {
 	req := telegram.SendMessageRequest{
 		ChatID:      "123",
@@ -22,7 +22,7 @@ func TestMarshalRequest(t *testing.T) {
 	assert.Equal(t, `{"chat_id":"123","text":"123"}`, string(j))
 }
 
-// TestMarshalRequest2 проверяет что в результате ReplyMarkup не маршалится и не уходит в составе запроса.
+// TestMarshalRequest2 tests that empty ReplyMarkup will be not included in the request.
 func TestMarshalRequest2(t *testing.T) {
 	req := telegram.SendMessageRequest{
 		ChatID:      "123",

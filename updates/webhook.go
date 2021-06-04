@@ -93,7 +93,7 @@ func (wh *Webhook) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		args := strings.Split(strings.Trim(r.URL.Path, "/ "), "/")
 		mHash := args[len(args)-1]
 
-		// Находим по хэшу нашего бота
+		// Find the bot by the hash
 		if mHash != wh.botHash {
 			log.Error("webhook bot hash mismatch")
 			return
