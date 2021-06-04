@@ -4,7 +4,10 @@ package telegram
 
 // This object represents a Telegram user or bot.
 type User struct {
-	// Unique identifier for this user or bot
+	// Unique identifier for this user or bot. This number may have more than 32
+	// significant bits and some programming languages may have difficulty/silent
+	// defects in interpreting it. But it has at most 52 significant bits, so a 64-bit
+	// integer or double-precision float type are safe for storing this identifier.
 	ID int `json:"id"`
 
 	// True, if this user is a bot
@@ -35,10 +38,10 @@ type User struct {
 
 // This object represents a chat.
 type Chat struct {
-	// Unique identifier for this chat. This number may be greater than 32 bits and
-	// some programming languages may have difficulty/silent defects in interpreting
-	// it. But it is smaller than 52 bits, so a signed 64 bit integer or
-	// double-precision float type are safe for storing this identifier.
+	// Unique identifier for this chat. This number may have more than 32 significant
+	// bits and some programming languages may have difficulty/silent defects in
+	// interpreting it. But it has at most 52 significant bits, so a signed 64-bit
+	// integer or double-precision float type are safe for storing this identifier.
 	ID int `json:"id"`
 
 	// Type of chat, can be either “private”, “group”, “supergroup” or
@@ -67,9 +70,8 @@ type Chat struct {
 	// in getChat.
 	Description string `json:"description,omitempty"`
 
-	// Optional. Chat invite link, for groups, supergroups and channel chats. Each
-	// administrator in a chat generates their own invite links, so the bot must first
-	// generate the link using exportChatInviteLink. Returned only in getChat.
+	// Optional. Primary invite link, for groups, supergroups and channel chats.
+	// Returned only in getChat.
 	InviteLink string `json:"invite_link,omitempty"`
 
 	// Optional. The most recent pinned message (by sending date). Returned only in
@@ -83,6 +85,10 @@ type Chat struct {
 	// Optional. For supergroups, the minimum allowed delay between consecutive
 	// messages sent by each unpriviledged user. Returned only in getChat.
 	SlowModeDelay int `json:"slow_mode_delay,omitempty"`
+
+	// Optional. The time after which all messages sent to the chat will be
+	// automatically deleted; in seconds. Returned only in getChat.
+	MessageAutoDeleteTime int `json:"message_auto_delete_time,omitempty"`
 
 	// Optional. For supergroups, name of group sticker set. Returned only in getChat.
 	StickerSetName string `json:"sticker_set_name,omitempty"`
@@ -258,18 +264,21 @@ type Message struct {
 	// replies to a very first message in a channel.
 	ChannelChatCreated bool `json:"channel_chat_created,omitempty"`
 
+	// Optional. Service message: auto-delete timer settings changed in the chat
+	MessageAutoDeleteTimerChanged *MessageAutoDeleteTimerChanged `json:"message_auto_delete_timer_changed,omitempty"`
+
 	// Optional. The group has been migrated to a supergroup with the specified
-	// identifier. This number may be greater than 32 bits and some programming
-	// languages may have difficulty/silent defects in interpreting it. But it is
-	// smaller than 52 bits, so a signed 64 bit integer or double-precision float type
-	// are safe for storing this identifier.
+	// identifier. This number may have more than 32 significant bits and some
+	// programming languages may have difficulty/silent defects in interpreting it. But
+	// it has at most 52 significant bits, so a signed 64-bit integer or
+	// double-precision float type are safe for storing this identifier.
 	MigrateToChatID int `json:"migrate_to_chat_id,omitempty"`
 
 	// Optional. The supergroup has been migrated from a group with the specified
-	// identifier. This number may be greater than 32 bits and some programming
-	// languages may have difficulty/silent defects in interpreting it. But it is
-	// smaller than 52 bits, so a signed 64 bit integer or double-precision float type
-	// are safe for storing this identifier.
+	// identifier. This number may have more than 32 significant bits and some
+	// programming languages may have difficulty/silent defects in interpreting it. But
+	// it has at most 52 significant bits, so a signed 64-bit integer or
+	// double-precision float type are safe for storing this identifier.
 	MigrateFromChatID int `json:"migrate_from_chat_id,omitempty"`
 
 	// Optional. Specified message was pinned. Note that the Message object in this
@@ -295,6 +304,18 @@ type Message struct {
 	// Optional. Service message. A user in the chat triggered another user's proximity
 	// alert while sharing Live Location.
 	ProximityAlertTriggered *ProximityAlertTriggered `json:"proximity_alert_triggered,omitempty"`
+
+	// Optional. Service message: voice chat scheduled
+	VoiceChatScheduled *VoiceChatScheduled `json:"voice_chat_scheduled,omitempty"`
+
+	// Optional. Service message: voice chat started
+	VoiceChatStarted *VoiceChatStarted `json:"voice_chat_started,omitempty"`
+
+	// Optional. Service message: voice chat ended
+	VoiceChatEnded *VoiceChatEnded `json:"voice_chat_ended,omitempty"`
+
+	// Optional. Service message: new participants invited to a voice chat
+	VoiceChatParticipantsInvited *VoiceChatParticipantsInvited `json:"voice_chat_participants_invited,omitempty"`
 
 	// Optional. Inline keyboard attached to the message. login_url buttons are
 	// represented as ordinary url buttons.
@@ -527,7 +548,10 @@ type Contact struct {
 	// Optional. Contact's last name
 	LastName string `json:"last_name,omitempty"`
 
-	// Optional. Contact's user identifier in Telegram
+	// Optional. Contact's user identifier in Telegram. This number may have more than
+	// 32 significant bits and some programming languages may have difficulty/silent
+	// defects in interpreting it. But it has at most 52 significant bits, so a 64-bit
+	// integer or double-precision float type are safe for storing this identifier.
 	UserID int `json:"user_id,omitempty"`
 
 	// Optional. Additional data about the contact in the form of a vCard
@@ -539,8 +563,8 @@ type Dice struct {
 	// Emoji on which the dice throw animation is based
 	Emoji string `json:"emoji"`
 
-	// Value of the dice, 1-6 for “” and “” base emoji, 1-5 for “” and
-	// “” base emoji, 1-64 for “” base emoji
+	// Value of the dice, 1-6 for “”, “” and “” base emoji, 1-5 for “”
+	// and “” base emoji, 1-64 for “” base emoji
 	Value int `json:"value"`
 }
 
@@ -675,6 +699,38 @@ type ProximityAlertTriggered struct {
 
 	// The distance between the users
 	Distance int `json:"distance"`
+}
+
+// This object represents a service message about a change in auto-delete timer
+// settings.
+type MessageAutoDeleteTimerChanged struct {
+	// New auto-delete time for messages in the chat
+	MessageAutoDeleteTime int `json:"message_auto_delete_time"`
+}
+
+// This object represents a service message about a voice chat scheduled in the
+// chat.
+type VoiceChatScheduled struct {
+	// Point in time (Unix timestamp) when the voice chat is supposed to be started by
+	// a chat administrator
+	StartDate int `json:"start_date"`
+}
+
+// This object represents a service message about a voice chat started in the chat.
+// Currently holds no information.
+type VoiceChatStarted struct{}
+
+// This object represents a service message about a voice chat ended in the chat.
+type VoiceChatEnded struct {
+	// Voice chat duration; in seconds
+	Duration int `json:"duration"`
+}
+
+// This object represents a service message about new members invited to a voice
+// chat.
+type VoiceChatParticipantsInvited struct {
+	// Optional. New members that were invited to the voice chat
+	Users []User `json:"users,omitempty"`
 }
 
 // This object represent a user's profile pictures.
@@ -993,6 +1049,30 @@ type ChatPhoto struct {
 	BigFileUniqueID string `json:"big_file_unique_id"`
 }
 
+// Represents an invite link for a chat.
+type ChatInviteLink struct {
+	// The invite link. If the link was created by another chat administrator, then the
+	// second part of the link will be replaced with “…”.
+	InviteLink string `json:"invite_link"`
+
+	// Creator of the link
+	Creator *User `json:"creator"`
+
+	// True, if the link is primary
+	IsPrimary bool `json:"is_primary"`
+
+	// True, if the link is revoked
+	IsRevoked bool `json:"is_revoked"`
+
+	// Optional. Point in time (Unix timestamp) when the link will expire or has been
+	// expired
+	ExpireDate int `json:"expire_date,omitempty"`
+
+	// Optional. Maximum number of users that can be members of the chat simultaneously
+	// after joining the chat via this invite link; 1-99999
+	MemberLimit int `json:"member_limit,omitempty"`
+}
+
 // This object contains information about one member of a chat.
 type ChatMember struct {
 	// Information about the user
@@ -1013,6 +1093,12 @@ type ChatMember struct {
 	// privileges of that user
 	CanBeEdited bool `json:"can_be_edited,omitempty"`
 
+	// Optional. Administrators only. True, if the administrator can access the chat
+	// event log, chat statistics, message statistics in channels, see channel members,
+	// see anonymous administrators in supergroups and ignore slow mode. Implied by any
+	// other administrator privilege
+	CanManageChat bool `json:"can_manage_chat,omitempty"`
+
 	// Optional. Administrators only. True, if the administrator can post in the
 	// channel; channels only
 	CanPostMessages bool `json:"can_post_messages,omitempty"`
@@ -1024,6 +1110,10 @@ type ChatMember struct {
 	// Optional. Administrators only. True, if the administrator can delete messages of
 	// other users
 	CanDeleteMessages bool `json:"can_delete_messages,omitempty"`
+
+	// Optional. Administrators only. True, if the administrator can manage voice
+	// chats
+	CanManageVoiceChats bool `json:"can_manage_voice_chats,omitempty"`
 
 	// Optional. Administrators only. True, if the administrator can restrict, ban or
 	// unban chat members
@@ -1073,6 +1163,28 @@ type ChatMember struct {
 	// Optional. Restricted and kicked only. Date when restrictions will be lifted for
 	// this user; unix time
 	UntilDate int `json:"until_date,omitempty"`
+}
+
+// This object represents changes in the status of a chat member.
+type ChatMemberUpdated struct {
+	// Chat the user belongs to
+	Chat *Chat `json:"chat"`
+
+	// Performer of the action, which resulted in the change
+	From *User `json:"from"`
+
+	// Date the change was done in Unix time
+	Date int `json:"date"`
+
+	// Previous information about the chat member
+	OldChatMember *ChatMember `json:"old_chat_member"`
+
+	// New information about the chat member
+	NewChatMember *ChatMember `json:"new_chat_member"`
+
+	// Optional. Chat invite link, which was used by the user to join the chat; for
+	// joining by invite link events only.
+	InviteLink *ChatInviteLink `json:"invite_link,omitempty"`
 }
 
 // Describes actions that a non-administrator user is allowed to take in a chat.
@@ -1130,10 +1242,10 @@ type BotCommand struct {
 // Contains information about why a request was unsuccessful.
 type ResponseParameters struct {
 	// Optional. The group has been migrated to a supergroup with the specified
-	// identifier. This number may be greater than 32 bits and some programming
-	// languages may have difficulty/silent defects in interpreting it. But it is
-	// smaller than 52 bits, so a signed 64 bit integer or double-precision float type
-	// are safe for storing this identifier.
+	// identifier. This number may have more than 32 significant bits and some
+	// programming languages may have difficulty/silent defects in interpreting it. But
+	// it has at most 52 significant bits, so a signed 64-bit integer or
+	// double-precision float type are safe for storing this identifier.
 	MigrateToChatID int `json:"migrate_to_chat_id,omitempty"`
 
 	// Optional. In case of exceeding flood control, the number of seconds left to wait

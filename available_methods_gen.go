@@ -108,8 +108,8 @@ type ForwardMessageRequest struct {
 	MessageID int `json:"message_id"`
 }
 
-// Use this method to forward messages of any kind. On success, the sent Message is
-// returned.
+// Use this method to forward messages of any kind. Service messages can't be
+// forwarded. On success, the sent Message is returned.
 func (b *Bot) ForwardMessage(req *ForwardMessageRequest) (*Message, error) {
 	j, err := b.makeRequest("forwardMessage", req)
 	if err != nil {
@@ -162,9 +162,10 @@ type CopyMessageRequest struct {
 	ReplyMarkup AnyKeyboard `json:"reply_markup,omitempty"`
 }
 
-// Use this method to copy messages of any kind. The method is analogous to the
-// method forwardMessages, but the copied message doesn't have a link to the
-// original message. Returns the MessageId of the sent message on success.
+// Use this method to copy messages of any kind. Service messages and invoice
+// messages can't be copied. The method is analogous to the method forwardMessage,
+// but the copied message doesn't have a link to the original message. Returns the
+// MessageId of the sent message on success.
 func (b *Bot) CopyMessage(req *CopyMessageRequest) (*MessageId, error) {
 	j, err := b.makeRequest("copyMessage", req)
 	if err != nil {
@@ -972,9 +973,9 @@ type SendDiceRequest struct {
 	ChatID string `json:"chat_id"`
 
 	// Optional. Emoji on which the dice throw animation is based. Currently, must be
-	// one of “”, “”, “”, “”, or “”. Dice can have values 1-6 for
-	// “” and “”, values 1-5 for “” and “”, and values 1-64 for “”.
-	// Defaults to “”
+	// one of “”, “”, “”, “”, “”, or “”. Dice can have values
+	// 1-6 for “”, “” and “”, values 1-5 for “” and “”, and values
+	// 1-64 for “”. Defaults to “”
 	Emoji string `json:"emoji,omitempty"`
 
 	// Optional. Sends the message silently. Users will receive a notification with no
@@ -1103,6 +1104,12 @@ type KickChatMemberRequest struct {
 	// more than 366 days or less than 30 seconds from the current time they are
 	// considered to be banned forever. Applied for supergroups and channels only.
 	UntilDate int `json:"until_date,omitempty"`
+
+	// Optional. Pass True to delete all messages from the chat for the user that is
+	// being removed. If False, the user will be able to see messages in the group that
+	// were sent before the user was removed. Always True for supergroups and
+	// channels.
+	RevokeMessages bool `json:"revoke_messages,omitempty"`
 }
 
 // Use this method to kick a user from a group, a supergroup or a channel. In the
@@ -1173,9 +1180,11 @@ type PromoteChatMemberRequest struct {
 	// Optional. Pass True, if the administrator's presence in the chat is hidden
 	IsAnonymous bool `json:"is_anonymous,omitempty"`
 
-	// Optional. Pass True, if the administrator can change chat title, photo and other
-	// settings
-	CanChangeInfo bool `json:"can_change_info,omitempty"`
+	// Optional. Pass True, if the administrator can access the chat event log, chat
+	// statistics, message statistics in channels, see channel members, see anonymous
+	// administrators in supergroups and ignore slow mode. Implied by any other
+	// administrator privilege
+	CanManageChat bool `json:"can_manage_chat,omitempty"`
 
 	// Optional. Pass True, if the administrator can create channel posts, channels
 	// only
@@ -1188,20 +1197,27 @@ type PromoteChatMemberRequest struct {
 	// Optional. Pass True, if the administrator can delete messages of other users
 	CanDeleteMessages bool `json:"can_delete_messages,omitempty"`
 
-	// Optional. Pass True, if the administrator can invite new users to the chat
-	CanInviteUsers bool `json:"can_invite_users,omitempty"`
+	// Optional. Pass True, if the administrator can manage voice chats
+	CanManageVoiceChats bool `json:"can_manage_voice_chats,omitempty"`
 
 	// Optional. Pass True, if the administrator can restrict, ban or unban chat
 	// members
 	CanRestrictMembers bool `json:"can_restrict_members,omitempty"`
 
-	// Optional. Pass True, if the administrator can pin messages, supergroups only
-	CanPinMessages bool `json:"can_pin_messages,omitempty"`
-
 	// Optional. Pass True, if the administrator can add new administrators with a
 	// subset of their own privileges or demote administrators that he has promoted,
 	// directly or indirectly (promoted by administrators that were appointed by him)
 	CanPromoteMembers bool `json:"can_promote_members,omitempty"`
+
+	// Optional. Pass True, if the administrator can change chat title, photo and other
+	// settings
+	CanChangeInfo bool `json:"can_change_info,omitempty"`
+
+	// Optional. Pass True, if the administrator can invite new users to the chat
+	CanInviteUsers bool `json:"can_invite_users,omitempty"`
+
+	// Optional. Pass True, if the administrator can pin messages, supergroups only
+	CanPinMessages bool `json:"can_pin_messages,omitempty"`
 }
 
 // Use this method to promote or demote a user in a supergroup or a channel. The
@@ -1252,21 +1268,104 @@ type ExportChatInviteLinkRequest struct {
 	ChatID string `json:"chat_id"`
 }
 
-// Use this method to generate a new invite link for a chat; any previously
-// generated link is revoked. The bot must be an administrator in the chat for this
-// to work and must have the appropriate admin rights. Returns the new invite link
-// as String on success.
+// Use this method to generate a new primary invite link for a chat; any previously
+// generated primary link is revoked. The bot must be an administrator in the chat
+// for this to work and must have the appropriate admin rights. Returns the new
+// invite link as String on success.
 //
 //
 // Note: Each administrator in a chat generates their own invite links. Bots can't
 // use invite links generated by other administrators. If you want your bot to work
 // with invite links, it will need to generate its own link using
-// exportChatInviteLink — after this the link will become available to the bot
-// via the getChat method. If your bot needs to generate a new invite link
-// replacing its previous one, use exportChatInviteLink again.
+// exportChatInviteLink or by calling the getChat method. If your bot needs to
+// generate a new primary invite link replacing its previous one, use
+// exportChatInviteLink again.
 //
 func (b *Bot) ExportChatInviteLink(req *ExportChatInviteLinkRequest) (json.RawMessage, error) {
 	return b.makeRequest("exportChatInviteLink", req)
+}
+
+type CreateChatInviteLinkRequest struct {
+	// Unique identifier for the target chat or username of the target channel (in the
+	// format @channelusername)
+	ChatID string `json:"chat_id"`
+
+	// Optional. Point in time (Unix timestamp) when the link will expire
+	ExpireDate int `json:"expire_date,omitempty"`
+
+	// Optional. Maximum number of users that can be members of the chat simultaneously
+	// after joining the chat via this invite link; 1-99999
+	MemberLimit int `json:"member_limit,omitempty"`
+}
+
+// Use this method to create an additional invite link for a chat. The bot must be
+// an administrator in the chat for this to work and must have the appropriate
+// admin rights. The link can be revoked using the method revokeChatInviteLink.
+// Returns the new invite link as ChatInviteLink object.
+func (b *Bot) CreateChatInviteLink(req *CreateChatInviteLinkRequest) (*ChatInviteLink, error) {
+	j, err := b.makeRequest("createChatInviteLink", req)
+	if err != nil {
+		return nil, err
+	}
+
+	var resp ChatInviteLink
+	err = json.Unmarshal(j, &resp)
+	return &resp, err
+}
+
+type EditChatInviteLinkRequest struct {
+	// Unique identifier for the target chat or username of the target channel (in the
+	// format @channelusername)
+	ChatID string `json:"chat_id"`
+
+	// The invite link to edit
+	InviteLink string `json:"invite_link"`
+
+	// Optional. Point in time (Unix timestamp) when the link will expire
+	ExpireDate int `json:"expire_date,omitempty"`
+
+	// Optional. Maximum number of users that can be members of the chat simultaneously
+	// after joining the chat via this invite link; 1-99999
+	MemberLimit int `json:"member_limit,omitempty"`
+}
+
+// Use this method to edit a non-primary invite link created by the bot. The bot
+// must be an administrator in the chat for this to work and must have the
+// appropriate admin rights. Returns the edited invite link as a ChatInviteLink
+// object.
+func (b *Bot) EditChatInviteLink(req *EditChatInviteLinkRequest) (*ChatInviteLink, error) {
+	j, err := b.makeRequest("editChatInviteLink", req)
+	if err != nil {
+		return nil, err
+	}
+
+	var resp ChatInviteLink
+	err = json.Unmarshal(j, &resp)
+	return &resp, err
+}
+
+type RevokeChatInviteLinkRequest struct {
+	// Unique identifier of the target chat or username of the target channel (in the
+	// format @channelusername)
+	ChatID string `json:"chat_id"`
+
+	// The invite link to revoke
+	InviteLink string `json:"invite_link"`
+}
+
+// Use this method to revoke an invite link created by the bot. If the primary link
+// is revoked, a new link is automatically generated. The bot must be an
+// administrator in the chat for this to work and must have the appropriate admin
+// rights. Returns the revoked invite link as ChatInviteLink object.
+func (b *Bot) RevokeChatInviteLink(req *RevokeChatInviteLinkRequest) (*ChatInviteLink, error) {
+	j, err := b.makeRequest("revokeChatInviteLink", req)
+	if err != nil {
+		return nil, err
+	}
+
+	var resp ChatInviteLink
+	err = json.Unmarshal(j, &resp)
+	return &resp, err
 }
 
 type SetChatPhotoRequest struct {

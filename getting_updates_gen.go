@@ -52,6 +52,15 @@ type Update struct {
 	// Optional. A user changed their answer in a non-anonymous poll. Bots receive new
 	// votes only in polls that were sent by the bot itself.
 	PollAnswer *PollAnswer `json:"poll_answer,omitempty"`
+
+	// Optional. The bot's chat member status was updated in a chat. For private chats,
+	// this update is received only when the bot is blocked or unblocked by the user.
+	MyChatMember *ChatMemberUpdated `json:"my_chat_member,omitempty"`
+
+	// Optional. A chat member's status was updated in a chat. The bot must be an
+	// administrator in the chat and must explicitly specify “chat_member” in the
+	// list of allowed_updates to receive these updates.
+	ChatMember *ChatMemberUpdated `json:"chat_member,omitempty"`
 }
 
 type GetUpdatesRequest struct {
@@ -77,8 +86,8 @@ type GetUpdatesRequest struct {
 	// receive. For example, specify [“message”, “edited_channel_post”,
 	// “callback_query”] to only receive updates of these types. See Update for a
 	// complete list of available update types. Specify an empty list to receive all
-	// updates regardless of type (default). If not specified, the previous setting
-	// will be used.
+	// update types except chat_member (default). If not specified, the previous
+	// setting will be used.
 	//
 	// Please note that this parameter doesn't affect updates created before the call
 	// to the getUpdates, so unwanted updates may be received for a short period of
@@ -128,8 +137,8 @@ type SetWebhookRequest struct {
 	// receive. For example, specify [“message”, “edited_channel_post”,
 	// “callback_query”] to only receive updates of these types. See Update for a
 	// complete list of available update types. Specify an empty list to receive all
-	// updates regardless of type (default). If not specified, the previous setting
-	// will be used.
+	// update types except chat_member (default). If not specified, the previous
+	// setting will be used.
 	// Please note that this parameter doesn't affect updates created before the call
 	// to the setWebhook, so unwanted updates may be received for a short period of
 	// time.
@@ -218,6 +227,6 @@ type WebhookInfo struct {
 	MaxConnections int `json:"max_connections,omitempty"`
 
 	// Optional. A list of update types the bot is subscribed to. Defaults to all
-	// update types
+	// update types except chat_member
 	AllowedUpdates []string `json:"allowed_updates,omitempty"`
 }

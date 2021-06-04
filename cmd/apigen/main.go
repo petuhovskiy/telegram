@@ -1,24 +1,27 @@
-package apigen
+package main
 
 import (
+	"github.com/petuhovskiy/telegram/tools/apigen"
+	log "github.com/sirupsen/logrus"
 	"os"
-	"testing"
-
-	"github.com/stretchr/testify/assert"
 )
 
-func TestCodegen(t *testing.T) {
+func main() {
 	f, err := os.Open("api.html")
-	assert.Nil(t, err)
+	if err != nil {
+		log.WithError(err).Fatal("failed to read protocol html")
+	}
 	defer f.Close()
 
-	p, err := Parse(f, DefaultParseOpts)
-	assert.Nil(t, err)
+	p, err := apigen.Parse(f, apigen.DefaultParseOpts)
+	if err != nil {
+		log.WithError(err).Fatal("failed to parse protocol")
+	}
 
-	err = Codegen(p, &GenOpts{
+	err = apigen.Codegen(p, &apigen.GenOpts{
 		PackageName: "telegram",
 		Dest:        "../../",
-		TypeExceptions: []TypeException{
+		TypeExceptions: []apigen.TypeException{
 			{
 				Domain:     "",
 				TypeString: "Integer or String",
@@ -40,7 +43,7 @@ func TestCodegen(t *testing.T) {
 				GoType:     "InputMessageContent",
 			},
 		},
-		MethodExceptions: []MethodException{
+		MethodExceptions: []apigen.MethodException{
 			{
 				Method:       "setWebhook",
 				OverrideType: "json.RawMessage",
@@ -50,7 +53,7 @@ func TestCodegen(t *testing.T) {
 				OverrideType: "[]Update",
 			},
 		},
-		StructExceptions: []StructException{
+		StructExceptions: []apigen.StructException{
 			{
 				StructName: "InlineQueryResult",
 				Skip:       true,
@@ -61,5 +64,7 @@ func TestCodegen(t *testing.T) {
 			},
 		},
 	})
-	assert.Nil(t, err)
+	if err != nil {
+		log.WithError(err).Fatal("failed to generate code")
+	}
 }
