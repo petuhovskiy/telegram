@@ -1,28 +1,12 @@
 package apigen
 
 import (
-	"log"
-	"os"
 	"strings"
 	"testing"
 
-	"github.com/davecgh/go-spew/spew"
 	"github.com/stretchr/testify/assert"
 	"golang.org/x/net/html"
 )
-
-func TestParse(t *testing.T) {
-	f, err := os.Open("api.html")
-	if err != nil {
-		log.Fatal(err)
-	}
-	defer f.Close()
-
-	p, err := Parse(f, DefaultParseOpts)
-	spew.Dump(p, err)
-
-	assert.Nil(t, err)
-}
 
 func TestExtractText(t *testing.T) {
 	check := func(text string, src string) {
