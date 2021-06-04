@@ -13,6 +13,7 @@ var DefaultParseOpts = &ParseOpts{
 		"Recent changes",
 		"Authorizing your bot",
 		"Making requests",
+		"Using a Local Bot API Server",
 	},
 	IgnoreH4: []string{
 		"Available types$Sending files",
